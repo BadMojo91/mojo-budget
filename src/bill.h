@@ -25,7 +25,7 @@ extern BillEntry *entryMap;
 static uint64_t _nextID = 0;
 
 void AddEntry(BillEntry** map, Bill entry);
-
+void RemoveEntry(uint64_t id);
 const char* GetBillFreq(PaymentFrequency frequency);
 double ConvertBillPaymentFreqeuncy(const Bill* bill, PaymentFrequency targetFreq);
 const char* GetTotalPaymentsByFrequency(BillEntry *map);

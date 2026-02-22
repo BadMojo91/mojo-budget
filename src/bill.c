@@ -75,19 +75,28 @@ void PrintEntryMap(BillEntry *map) {
   printf("---------------------------------------------------\n");
   printf("-                      BILLS                      -\n");
   printf("---------------------------------------------------\n\n");
-  printf("Name          Frequency     Amount    Total | Week | Fortnight | Month | Quarter | Year\n");
-  printf("________________________________________________________________________________________\n");
+  printf("ID | Name               | Frequency      | Amount    | Week      | Fortnight   | Month     | Quarter   | Year      |\n");
+  printf("---------------------------------------------------------------------------------------------------------------\n");
   for (int i = 0; i < entryCount; i++) {
     Bill bill = map[i].value;
+    uint64_t id = map[i].key;
     double w,f,m,q,y;
     w = ConvertBillPaymentFrequency(&bill, WEEKLY);
     f = ConvertBillPaymentFrequency(&bill, FORTNIGHTLY);
     m = ConvertBillPaymentFrequency(&bill, MONTHLY);
     q = ConvertBillPaymentFrequency(&bill, QUARTERLY);
     y = ConvertBillPaymentFrequency(&bill, YEARLY);
-     
-    printf("%s        %s        $%.2f  |  $%.2f  $%.2f $%.2f $%.2f $%.2f \n", bill.name,
-           GetBillFreq(bill.frequency), bill.payment, w,f,m,q,y);
+
+    printf("%-2lu | %-18s | %-14s | $%8.2f | $%8.2f | $%10.2f | $%8.2f | $%8.2f | $%8.2f |\n",
+           id,
+           bill.name,
+           GetBillFreq(bill.frequency),
+           bill.payment,
+           w,
+           f,
+           m,
+           q,
+           y);
   }
   printf("\n\n---------------------------------------------------\n");
   printf("%s", GetTotalPaymentsByFrequency(map));
