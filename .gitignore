@@ -1,0 +1,34 @@
+ 
+# Compiled object files
+*.o
+*.obj
+
+# Compiled binary files
+*.exe
+*.out
+*.app
+*.elf
+
+# Libraries
+*.a
+*.so
+*.dll
+*.dylib
+
+# Debug files
+*.dSYM/
+*.stackdump
+
+# Build directories
+/build/
+/bin/
+/lib/
+
+# Generated files
+*.log
+*.tmp
+
+# Editor files
+*~
+*.swp
+*.swo
