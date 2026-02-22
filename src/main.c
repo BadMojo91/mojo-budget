@@ -8,7 +8,10 @@ int main() {
   AddEntry(&entryMap, bill1);
   AddEntry(&entryMap, bill2);
   AddEntry(&entryMap, bill3);
-
+ 
+  SaveEntryMap("budget.txt", entryMap, FILETYPE_TXT);
+  SaveEntryMap("budget.bud", entryMap, FILETYPE_BUD);
+  entryMap = LoadEntryMap("budget.bud");
   PrintEntryMap(entryMap);
   return 0;
 }
