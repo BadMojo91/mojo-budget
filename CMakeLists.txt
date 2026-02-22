@@ -16,4 +16,4 @@ include_directories(/usr/include)
 file(GLOB SRC_FILES src/*.c)
 
 add_executable(mojo-budget ${SRC_FILES})
-target_link_libraries(mojo-budget ${SDL2_LIBRARIES})
+target_link_libraries(mojo-budget ${SDL2_LIBRARIES} ncurses)
