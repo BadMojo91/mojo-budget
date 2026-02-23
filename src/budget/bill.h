@@ -1,6 +1,7 @@
 #ifndef BILL_H
 #define BILL_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -19,6 +20,8 @@ extern "C" {
     char name[256];
     PaymentFrequency frequency;
     double payment;
+    bool include_in_totals;
+    bool locked;
   } Bill;
 
   typedef struct {

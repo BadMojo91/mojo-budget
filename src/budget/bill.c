@@ -5,16 +5,18 @@
 
 #include "bill.h"
 
-BillEntry *entryMap = NULL;
+BillEntry* entryMap = NULL;
 
-void AddEntry(BillEntry **map, Bill billEntry)
+void AddEntry(BillEntry** map, Bill billEntry)
 {
+  billEntry.include_in_totals = true;
+  billEntry.locked = false;
   uint64_t newID = _nextID++;
   hmput(*map, newID, billEntry);
   printf("Adding bill entry: %s\nID: %lu\n", billEntry.name, newID);
 }
 
-void RemoveEntry(BillEntry **map, uint64_t id)
+void RemoveEntry(BillEntry** map, uint64_t id)
 {
   int entryCount = hmlen(*map);
   hmdel(*map, id);
@@ -44,7 +46,7 @@ void RemoveEntry(BillEntry **map, uint64_t id)
   _nextID = maxKey + 1;
 }
 
-const char *GetBillFreq(PaymentFrequency frequency)
+const char* GetBillFreq(PaymentFrequency frequency)
 {
   switch (frequency)
   {
@@ -63,8 +65,8 @@ const char *GetBillFreq(PaymentFrequency frequency)
   }
 }
 
-double ConvertBillPaymentFrequency(const Bill *bill,
-                                   PaymentFrequency targetFreq)
+double ConvertBillPaymentFrequency(const Bill* bill,
+  PaymentFrequency targetFreq)
 {
   // Approximate periods per year for each frequency
   static const double periodsPerYear[] = {
@@ -81,15 +83,19 @@ double ConvertBillPaymentFrequency(const Bill *bill,
   return annualAmount / targetPeriods;
 }
 
-const char *GetTotalPaymentsByFrequency(BillEntry *map)
+const char* GetTotalPaymentsByFrequency(BillEntry* map)
 {
   static char result[512];
-  double totals[5] = {0}; // WEEKLY, FORTNIGHTLY, MONTHLY, QUARTERLY, YEARLY
+  double totals[5] = { 0 }; // WEEKLY, FORTNIGHTLY, MONTHLY, QUARTERLY, YEARLY
   int entryCount = hmlen(map);
 
   for (int i = 0; i < entryCount; i++)
   {
     Bill bill = map[i].value;
+    if (!bill.include_in_totals)
+    {
+      continue;
+    }
     for (int freq = WEEKLY; freq <= YEARLY; freq++)
     {
       totals[freq] += ConvertBillPaymentFrequency(&bill, freq);
@@ -97,15 +103,15 @@ const char *GetTotalPaymentsByFrequency(BillEntry *map)
   }
 
   snprintf(result, sizeof(result),
-           "Weekly: $%.2f\nFortnightly: $%.2f\nMonthly: $%.2f\nQuarterly: "
-           "$%.2f\nYearly: $%.2f\n",
-           totals[WEEKLY], totals[FORTNIGHTLY], totals[MONTHLY],
-           totals[QUARTERLY], totals[YEARLY]);
+    "Weekly: $%.2f\nFortnightly: $%.2f\nMonthly: $%.2f\nQuarterly: "
+    "$%.2f\nYearly: $%.2f\n",
+    totals[WEEKLY], totals[FORTNIGHTLY], totals[MONTHLY],
+    totals[QUARTERLY], totals[YEARLY]);
 
   return result;
 }
 
-const char *GetEntryMapString(BillEntry *map)
+const char* GetEntryMapString(BillEntry* map)
 {
   static char result[4096];
   int entryCount = hmlen(map);
@@ -115,19 +121,19 @@ const char *GetEntryMapString(BillEntry *map)
   //  offset += snprintf(result + offset, sizeof(result) - offset, "Found
   //  entries: %d\n\n", entryCount);
   offset += snprintf(result + offset, sizeof(result) - offset,
-                     "---------------------------------------------------\n");
+    "---------------------------------------------------\n");
   offset += snprintf(result + offset, sizeof(result) - offset,
-                     "-                      BILLS                      -\n");
+    "-                      BILLS                      -\n");
   offset += snprintf(result + offset, sizeof(result) - offset,
-                     "---------------------------------------------------\n\n");
+    "---------------------------------------------------\n\n");
   offset +=
-      snprintf(result + offset, sizeof(result) - offset,
-               "ID | Name               | Frequency      | Amount    | Week    "
-               "  | Fortnight   | Month     | Quarter   | Year      |\n");
+    snprintf(result + offset, sizeof(result) - offset,
+      "ID | Name               | Frequency      | Amount    | Week    "
+      "  | Fortnight   | Month     | Quarter   | Year      |\n");
   offset +=
-      snprintf(result + offset, sizeof(result) - offset,
-               "---------------------------------------------------------------"
-               "------------------------------------------------\n");
+    snprintf(result + offset, sizeof(result) - offset,
+      "---------------------------------------------------------------"
+      "------------------------------------------------\n");
 
   for (int i = 0; i < entryCount; i++)
   {
@@ -141,36 +147,36 @@ const char *GetEntryMapString(BillEntry *map)
     y = ConvertBillPaymentFrequency(&bill, YEARLY);
 
     snprintf(line, sizeof(line),
-             "%-2lu | %-18s | %-14s | $%8.2f | $%8.2f | $%10.2f | $%8.2f | "
-             "$%8.2f | $%8.2f |\n",
-             id, bill.name, GetBillFreq(bill.frequency), bill.payment, w, f, m,
-             q, y);
+      "%-2lu | %-18s | %-14s | $%8.2f | $%8.2f | $%10.2f | $%8.2f | "
+      "$%8.2f | $%8.2f |\n",
+      id, bill.name, GetBillFreq(bill.frequency), bill.payment, w, f, m,
+      q, y);
 
     offset += snprintf(result + offset, sizeof(result) - offset, "%s", line);
   }
 
   offset +=
-      snprintf(result + offset, sizeof(result) - offset,
-               "\n\n---------------------------------------------------\n");
+    snprintf(result + offset, sizeof(result) - offset,
+      "\n\n---------------------------------------------------\n");
   offset += snprintf(result + offset, sizeof(result) - offset, "%s",
-                     GetTotalPaymentsByFrequency(map));
+    GetTotalPaymentsByFrequency(map));
   offset += snprintf(result + offset, sizeof(result) - offset,
-                     "---------------------------------------------------\n\n");
+    "---------------------------------------------------\n\n");
 
   return result;
 }
-void PrintEntryMap(BillEntry *map) { printf("%s", GetEntryMapString(map)); }
+void PrintEntryMap(BillEntry* map) { printf("%s", GetEntryMapString(map)); }
 
-BillEntry *LoadEntryMap(const char *file)
+BillEntry* LoadEntryMap(const char* file)
 {
-  FILE *fp = fopen(file, "rb");
+  FILE* fp = fopen(file, "rb");
   if (!fp)
     return NULL;
 
   int entryCount;
   fread(&entryCount, sizeof(int), 1, fp);
 
-  BillEntry *map = NULL;
+  BillEntry* map = NULL;
   for (int i = 0; i < entryCount; i++)
   {
     uint64_t key;
@@ -183,13 +189,13 @@ BillEntry *LoadEntryMap(const char *file)
   return map;
 }
 
-void SaveEntryMap(const char *file, BillEntry *map, SaveFileType type)
+void SaveEntryMap(const char* file, BillEntry* map, SaveFileType type)
 {
   switch (type)
   {
   case FILETYPE_TXT:
-    const char *data = GetEntryMapString(map);
-    FILE *fp = fopen(file, "w");
+    const char* data = GetEntryMapString(map);
+    FILE* fp = fopen(file, "w");
     if (fp)
     {
       fprintf(fp, "%s", data);
@@ -198,7 +204,7 @@ void SaveEntryMap(const char *file, BillEntry *map, SaveFileType type)
     break;
 
   case FILETYPE_BUD:
-    FILE *fd = fopen(file, "wb");
+    FILE* fd = fopen(file, "wb");
     if (fd)
     {
       int entryCount = hmlen(map);
