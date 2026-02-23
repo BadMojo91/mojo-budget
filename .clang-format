@@ -1,0 +1,4 @@
+# .clang-format file
+BasedOnStyle: LLVM
+BreakBeforeBraces: Allman
+

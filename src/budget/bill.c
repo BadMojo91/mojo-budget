@@ -7,19 +7,23 @@
 
 BillEntry *entryMap = NULL;
 
-void AddEntry(BillEntry **map, Bill billEntry) {
+void AddEntry(BillEntry **map, Bill billEntry)
+{
   uint64_t newID = _nextID++;
   hmput(*map, newID, billEntry);
   printf("Adding bill entry: %s\nID: %lu\n", billEntry.name, newID);
 }
 
-void RemoveEntry(BillEntry **map, uint64_t id) {
+void RemoveEntry(BillEntry **map, uint64_t id)
+{
   int entryCount = hmlen(*map);
   hmdel(*map, id);
 
   // Shift keys after the removed id
-  for (int i = 0; i < entryCount; i++) {
-    if ((*map)[i].key > id) {
+  for (int i = 0; i < entryCount; i++)
+  {
+    if ((*map)[i].key > id)
+    {
       Bill bill = (*map)[i].value;
       uint64_t oldKey = (*map)[i].key;
       hmdel(*map, oldKey);
@@ -30,16 +34,20 @@ void RemoveEntry(BillEntry **map, uint64_t id) {
   // Update _nextID to be highest key + 1
   uint64_t maxKey = 0;
   entryCount = hmlen(*map);
-  for (int i = 0; i < entryCount; i++) {
-    if ((*map)[i].key > maxKey) {
+  for (int i = 0; i < entryCount; i++)
+  {
+    if ((*map)[i].key > maxKey)
+    {
       maxKey = (*map)[i].key;
     }
   }
   _nextID = maxKey + 1;
 }
 
-const char *GetBillFreq(PaymentFrequency frequency) {
-  switch (frequency) {
+const char *GetBillFreq(PaymentFrequency frequency)
+{
+  switch (frequency)
+  {
   case WEEKLY:
     return "Weekly";
   case FORTNIGHTLY:
@@ -56,7 +64,8 @@ const char *GetBillFreq(PaymentFrequency frequency) {
 }
 
 double ConvertBillPaymentFrequency(const Bill *bill,
-                                   PaymentFrequency targetFreq) {
+                                   PaymentFrequency targetFreq)
+{
   // Approximate periods per year for each frequency
   static const double periodsPerYear[] = {
       52.0, // WEEKLY
@@ -72,14 +81,17 @@ double ConvertBillPaymentFrequency(const Bill *bill,
   return annualAmount / targetPeriods;
 }
 
-const char *GetTotalPaymentsByFrequency(BillEntry *map) {
+const char *GetTotalPaymentsByFrequency(BillEntry *map)
+{
   static char result[512];
   double totals[5] = {0}; // WEEKLY, FORTNIGHTLY, MONTHLY, QUARTERLY, YEARLY
   int entryCount = hmlen(map);
 
-  for (int i = 0; i < entryCount; i++) {
+  for (int i = 0; i < entryCount; i++)
+  {
     Bill bill = map[i].value;
-    for (int freq = WEEKLY; freq <= YEARLY; freq++) {
+    for (int freq = WEEKLY; freq <= YEARLY; freq++)
+    {
       totals[freq] += ConvertBillPaymentFrequency(&bill, freq);
     }
   }
@@ -93,7 +105,8 @@ const char *GetTotalPaymentsByFrequency(BillEntry *map) {
   return result;
 }
 
-const char *GetEntryMapString(BillEntry *map) {
+const char *GetEntryMapString(BillEntry *map)
+{
   static char result[4096];
   int entryCount = hmlen(map);
   char line[256];
@@ -116,7 +129,8 @@ const char *GetEntryMapString(BillEntry *map) {
                "---------------------------------------------------------------"
                "------------------------------------------------\n");
 
-  for (int i = 0; i < entryCount; i++) {
+  for (int i = 0; i < entryCount; i++)
+  {
     Bill bill = map[i].value;
     uint64_t id = map[i].key;
     double w, f, m, q, y;
@@ -147,7 +161,8 @@ const char *GetEntryMapString(BillEntry *map) {
 }
 void PrintEntryMap(BillEntry *map) { printf("%s", GetEntryMapString(map)); }
 
-BillEntry *LoadEntryMap(const char *file) {
+BillEntry *LoadEntryMap(const char *file)
+{
   FILE *fp = fopen(file, "rb");
   if (!fp)
     return NULL;
@@ -156,7 +171,8 @@ BillEntry *LoadEntryMap(const char *file) {
   fread(&entryCount, sizeof(int), 1, fp);
 
   BillEntry *map = NULL;
-  for (int i = 0; i < entryCount; i++) {
+  for (int i = 0; i < entryCount; i++)
+  {
     uint64_t key;
     Bill bill;
     fread(&key, sizeof(uint64_t), 1, fp);
@@ -167,12 +183,15 @@ BillEntry *LoadEntryMap(const char *file) {
   return map;
 }
 
-void SaveEntryMap(const char *file, BillEntry *map, SaveFileType type) {
-  switch (type) {
+void SaveEntryMap(const char *file, BillEntry *map, SaveFileType type)
+{
+  switch (type)
+  {
   case FILETYPE_TXT:
     const char *data = GetEntryMapString(map);
     FILE *fp = fopen(file, "w");
-    if (fp) {
+    if (fp)
+    {
       fprintf(fp, "%s", data);
       fclose(fp);
     }
@@ -180,10 +199,12 @@ void SaveEntryMap(const char *file, BillEntry *map, SaveFileType type) {
 
   case FILETYPE_BUD:
     FILE *fd = fopen(file, "wb");
-    if (fd) {
+    if (fd)
+    {
       int entryCount = hmlen(map);
       fwrite(&entryCount, sizeof(int), 1, fd);
-      for (int i = 0; i < entryCount; i++) {
+      for (int i = 0; i < entryCount; i++)
+      {
         fwrite(&entryMap[i].key, sizeof(uint64_t), 1, fd);
         fwrite(&entryMap[i].value, sizeof(Bill), 1, fd);
       }

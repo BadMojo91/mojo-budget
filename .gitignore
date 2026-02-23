@@ -27,8 +27,13 @@
 # Generated files
 *.log
 *.tmp
-
-# Editor files
+.cache/
+compile_commands.json
+deps/
+ 
+#Editor files
 *~
 *.swp
 *.swo
+
+
