@@ -46,6 +46,12 @@ void RemoveEntry(BillEntry** map, uint64_t id)
   _nextID = maxKey + 1;
 }
 
+void ClearEntries(BillEntry** map)
+{
+  hmfree(*map);
+  _nextID = 0;
+}
+
 const char* GetBillFreq(PaymentFrequency frequency)
 {
   switch (frequency)

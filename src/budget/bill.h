@@ -36,6 +36,7 @@ extern "C" {
 
   void AddEntry(BillEntry** map, Bill entry);
   void RemoveEntry(BillEntry** map, uint64_t id);
+  void ClearEntries(BillEntry** map);
   const char* GetBillFreq(PaymentFrequency frequency);
   double ConvertBillPaymentFrequency(const Bill* bill,
     PaymentFrequency targetFreq);

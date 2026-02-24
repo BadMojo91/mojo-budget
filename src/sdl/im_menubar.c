@@ -13,7 +13,7 @@ void DrawMenuBar(bool* running)
     {
       if (igMenuItem_Bool("New", NULL, false, true))
       {
-        // Handle New action
+          ClearEntries(&entryMap);
       }
       if (igMenuItem_Bool("Open", NULL, false, true))
       {
