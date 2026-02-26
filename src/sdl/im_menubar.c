@@ -1,6 +1,8 @@
 #include "im_menubar.h"
+#include <stdbool.h>
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include "../budget/bill.h"
+#include "../budget/export.h"
 #include "cimgui.h"
 #include <stdio.h>
 #include <stb/stb_ds.h>
@@ -32,6 +34,10 @@ void DrawMenuBar(bool* running)
         if (igMenuItem_Bool("Text File (*.txt)", NULL, false, true))
         {
           // Handle Export to TXT action
+        }
+        if (igMenuItem_Bool("CSV File (*.csv)", NULL, false, true))
+        {
+          ExportAsCSV(&entryMap, "exported_bills.csv");
         }
         igEndMenu();
       }

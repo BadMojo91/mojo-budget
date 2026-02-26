@@ -178,7 +178,8 @@ BillEntry* LoadEntryMap(const char* file)
   FILE* fp = fopen(file, "rb");
   if (!fp)
     return NULL;
-
+ 
+  printf("Loading entry map from file: %s\n", file);
   int entryCount;
   fread(&entryCount, sizeof(int), 1, fp);
 
@@ -190,6 +191,8 @@ BillEntry* LoadEntryMap(const char* file)
     fread(&key, sizeof(uint64_t), 1, fp);
     fread(&bill, sizeof(Bill), 1, fp);
     hmput(map, key, bill);
+    _nextID++;
+    printf("Loaded bill entry: %s\nID: %lu\n", bill.name, key);
   }
   fclose(fp);
   return map;

@@ -52,8 +52,9 @@ int main(int argc, char *argv[])
   ImGui_ImplOpenGL2_Init();
 
   ImGuiIO *ioptr = igGetIO_Nil();
-
-  bool demoWindow = true;
+ 
+  
+  entryMap = LoadEntryMap("default.bud");
 
   bool running = true;
   while (running)
@@ -84,7 +85,7 @@ int main(int argc, char *argv[])
     ImGui_ImplOpenGL2_RenderDrawData(igGetDrawData());
     SDL_GL_SwapWindow(window);
   }
-
+  SaveEntryMap("default.bud", entryMap, FILETYPE_BUD);
   SDL_DestroyWindow(window);
   SDL_Quit();
 
