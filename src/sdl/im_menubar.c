@@ -33,7 +33,7 @@ void DrawMenuBar(bool* running)
       {
         if (igMenuItem_Bool("Text File (*.txt)", NULL, false, true))
         {
-          // Handle Export to TXT action
+          SaveEntryMap("exported_bills.txt", entryMap, FILETYPE_TXT);
         }
         if (igMenuItem_Bool("CSV File (*.csv)", NULL, false, true))
         {
