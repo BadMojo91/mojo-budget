@@ -36,33 +36,33 @@ Other deps used:
 Most of the dependancies will be fetched automatically when building, but you will need to have the usual build tools and libraries for SDL2, OpenGL and ncurses installed.
 
 Ubuntu:
-'''bash
+```bash
 sudo apt update
 sudo apt install build-essential cmake libsdl2-dev libgl1-mesa-dev libncurses-dev
-'''
+```
 
 Arch Linux:
-'''bash
+```bash
 sudo pacman -Sy base-devel cmake sdl2 mesa libgl ncurses
-'''
+```
 
-'''bash
+```bash
 cmake -G Ninja -B build
 cd build
 ninja
-'''
+```
 
 ## Usage
 
-'''bash
+```bash
 ./mojo-budget-sdl # for the gui version
-'''
+```
 
 or
 
-'''bash
+```bash
 ./mojo-budget-ncurses # for the terminal version
-'''
+```
 
 ## Notes
 
