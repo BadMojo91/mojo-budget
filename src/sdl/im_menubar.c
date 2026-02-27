@@ -4,10 +4,11 @@
 #include "../budget/bill.h"
 #include "../budget/export.h"
 #include "cimgui.h"
-#include <stdio.h>
+#include "tinyfiledialogs.h"
 #include <stb/stb_ds.h>
+#include <stdio.h>
 
-void DrawMenuBar(bool* running)
+void DrawMenuBar(bool *running)
 {
   if (igBeginMainMenuBar())
   {
@@ -15,29 +16,59 @@ void DrawMenuBar(bool* running)
     {
       if (igMenuItem_Bool("New", NULL, false, true))
       {
-          ClearEntries(&entryMap);
+        ClearEntries(&entryMap);
       }
       if (igMenuItem_Bool("Open", NULL, false, true))
       {
-        // Handle Open action
+        const char *path =
+            tinyfd_openFileDialog("Open File",               // title
+                                  "",                        // default path
+                                  1,                         // filter count
+                                  (const char *[]){"*.bud"}, // filter
+                                  "Budget Entry Maps", // filter description
+                                  0                    // single select
+            );
+        if (path)
+          entryMap = LoadEntryMap(path);
       }
       if (igMenuItem_Bool("Save", NULL, false, true))
       {
-        // Handle Save action
+        const char *path = tinyfd_saveFileDialog("Save Budget", "default.bud",
+                                                 1, (const char *[]){"*.bud"},
+                                                 "Budget File (*.bud)");
+
+        if (path)
+          SaveEntryMap(path, entryMap, FILETYPE_BUD);
       }
       if (igMenuItem_Bool("Save As", NULL, false, true))
       {
-        // Handle Save As action
+        const char *path = tinyfd_saveFileDialog("Save Budget", "default.bud",
+                                                 1, (const char *[]){"*.bud"},
+                                                 "Budget File (*.bud)");
+
+        if (path)
+          SaveEntryMap(path, entryMap, FILETYPE_BUD);
       }
       if (igBeginMenu("Export", true))
       {
         if (igMenuItem_Bool("Text File (*.txt)", NULL, false, true))
         {
-          SaveEntryMap("exported_bills.txt", entryMap, FILETYPE_TXT);
+          const char *path = tinyfd_saveFileDialog(
+              "Export As TXT", "budget.txt", 1, (const char *[]){"*.txt"},
+              "Text File (*.txt)");
+
+          if (path)
+            SaveEntryMap(path, entryMap, FILETYPE_TXT);
         }
         if (igMenuItem_Bool("CSV File (*.csv)", NULL, false, true))
         {
-          ExportAsCSV(&entryMap, "exported_bills.csv");
+
+          const char *path = tinyfd_saveFileDialog(
+              "Export As CSV", "budget.csv", 1, (const char *[]){"*.csv"},
+              "CSV File (*.csv)");
+
+          if (path)
+            ExportAsCSV(&entryMap, path);
         }
         igEndMenu();
       }
@@ -53,28 +84,25 @@ void DrawMenuBar(bool* running)
 
 void DrawBudgetWindow()
 {
-  static const char* freq_names[] = {
-    "Weekly", "Fortnightly", "Monthly", "Quarterly", "Yearly"
-  };
+  static const char *freq_names[] = {"Weekly", "Fortnightly", "Monthly",
+                                     "Quarterly", "Yearly"};
 
-  ImGuiViewport* viewport = igGetMainViewport();
+  ImGuiViewport *viewport = igGetMainViewport();
   float menuBarHeight = igGetFrameHeight();
   ImVec2 panelPos = viewport->Pos;
   panelPos.y += menuBarHeight;
   ImVec2 panelSize = viewport->Size;
   panelSize.y -= menuBarHeight;
-  double totals[5] = { 0.0 };
+  double totals[5] = {0.0};
   bool removeRequested = false;
   uint64_t removeKey = 0;
 
-  igSetNextWindowPos(panelPos, ImGuiCond_Always, (ImVec2) { 0, 0 });
+  igSetNextWindowPos(panelPos, ImGuiCond_Always, (ImVec2){0, 0});
   igSetNextWindowSize(panelSize, ImGuiCond_Always);
 
   if (!igBegin("Bills", NULL,
-    ImGuiWindowFlags_NoTitleBar |
-    ImGuiWindowFlags_NoCollapse |
-    ImGuiWindowFlags_NoMove |
-    ImGuiWindowFlags_NoResize))
+               ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
   {
     igEnd();
     return;
@@ -89,34 +117,39 @@ void DrawBudgetWindow()
   {
     maxTableHeight = rowHeight * 4.0f;
   }
-  float tableHeight = desiredTableHeight < maxTableHeight ? desiredTableHeight : maxTableHeight;
+  float tableHeight =
+      desiredTableHeight < maxTableHeight ? desiredTableHeight : maxTableHeight;
 
   if (igBeginTable("BillsEntries", 9,
-    ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
-    ImGuiTableFlags_Resizable |
-    ImGuiTableFlags_SizingFixedFit |
-    ImGuiTableFlags_ScrollX |
-    ImGuiTableFlags_ScrollY |
-    ImGuiTableFlags_NoKeepColumnsVisible,
-    (ImVec2) {
-    0, tableHeight
-  }, 0))
+                   ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                       ImGuiTableFlags_Resizable |
+                       ImGuiTableFlags_SizingFixedFit |
+                       ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY |
+                       ImGuiTableFlags_NoKeepColumnsVisible,
+                   (ImVec2){0, tableHeight}, 0))
   {
     igTableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 280.0f, 0);
-    igTableSetupColumn("Frequency", ImGuiTableColumnFlags_WidthFixed, 140.0f, 0);
+    igTableSetupColumn("Frequency", ImGuiTableColumnFlags_WidthFixed, 140.0f,
+                       0);
     igTableSetupColumn("Amount", ImGuiTableColumnFlags_WidthFixed, 120.0f, 0);
     igTableSetupColumn("Weekly", ImGuiTableColumnFlags_WidthFixed, 120.0f, 0);
-    igTableSetupColumn("Fortnightly", ImGuiTableColumnFlags_WidthFixed, 120.0f, 0);
+    igTableSetupColumn("Fortnightly", ImGuiTableColumnFlags_WidthFixed, 120.0f,
+                       0);
     igTableSetupColumn("Monthly", ImGuiTableColumnFlags_WidthFixed, 120.0f, 0);
-    igTableSetupColumn("Quarterly", ImGuiTableColumnFlags_WidthFixed, 120.0f, 0);
+    igTableSetupColumn("Quarterly", ImGuiTableColumnFlags_WidthFixed, 120.0f,
+                       0);
     igTableSetupColumn("Yearly", ImGuiTableColumnFlags_WidthFixed, 120.0f, 0);
-    igTableSetupColumn("", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoHide, 220.0f, 0);
+    igTableSetupColumn("",
+                       ImGuiTableColumnFlags_WidthFixed |
+                           ImGuiTableColumnFlags_NoResize |
+                           ImGuiTableColumnFlags_NoHide,
+                       220.0f, 0);
     igTableHeadersRow();
 
     for (int i = 0; i < entryCount; i++)
     {
-      BillEntry* entry = &entryMap[i];
-      Bill* bill = &entry->value;
+      BillEntry *entry = &entryMap[i];
+      Bill *bill = &entry->value;
 
       igTableNextRow(0, 0);
 
@@ -189,21 +222,25 @@ void DrawBudgetWindow()
 
       // Row actions
       igTableSetColumnIndex(8);
-      const char* useLabel = bill->include_in_totals ? "On" : "Off";
-      const char* lockLabel = bill->locked ? "Unlock" : "Lock";
+      const char *useLabel = bill->include_in_totals ? "On" : "Off";
+      const char *lockLabel = bill->locked ? "Unlock" : "Lock";
       const float spacing = 4.0f;
       const float buttonPadding = 16.0f;
       float actionsWidth = igGetContentRegionAvail().x;
-      float useWidth = igCalcTextSize(useLabel, NULL, false, -1.0f).x + buttonPadding;
-      float lockWidth = igCalcTextSize(lockLabel, NULL, false, -1.0f).x + buttonPadding;
-      float deleteWidth = igCalcTextSize("Delete", NULL, false, -1.0f).x + buttonPadding;
+      float useWidth =
+          igCalcTextSize(useLabel, NULL, false, -1.0f).x + buttonPadding;
+      float lockWidth =
+          igCalcTextSize(lockLabel, NULL, false, -1.0f).x + buttonPadding;
+      float deleteWidth =
+          igCalcTextSize("Delete", NULL, false, -1.0f).x + buttonPadding;
 
       if (igSmallButton(useLabel))
       {
         bill->include_in_totals = !bill->include_in_totals;
       }
 
-      if (actionsWidth >= (useWidth + spacing + lockWidth + spacing + deleteWidth))
+      if (actionsWidth >=
+          (useWidth + spacing + lockWidth + spacing + deleteWidth))
       {
         igSameLine(0.0f, spacing);
       }
@@ -213,8 +250,9 @@ void DrawBudgetWindow()
         bill->locked = !bill->locked;
       }
 
-      if (actionsWidth >= (useWidth + spacing + lockWidth + spacing + deleteWidth) ||
-        actionsWidth >= (lockWidth + spacing + deleteWidth))
+      if (actionsWidth >=
+              (useWidth + spacing + lockWidth + spacing + deleteWidth) ||
+          actionsWidth >= (lockWidth + spacing + deleteWidth))
       {
         igSameLine(0.0f, spacing);
       }
@@ -240,7 +278,7 @@ void DrawBudgetWindow()
     igTableSetColumnIndex(8);
     if (igSmallButton("+ Add"))
     {
-      Bill defaultBill = { 0 };
+      Bill defaultBill = {0};
       snprintf(defaultBill.name, sizeof(defaultBill.name), "New Bill");
       defaultBill.frequency = MONTHLY;
       defaultBill.payment = 0.0;
@@ -268,7 +306,7 @@ void DrawBudgetWindow()
   igEnd();
 }
 
-void DrawUI(bool* running)
+void DrawUI(bool *running)
 {
   DrawMenuBar(running);
   DrawBudgetWindow();

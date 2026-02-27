@@ -9,16 +9,17 @@ set(FETCHCONTENT_BASE_DIR ${DEPS_DIR})
 include(FetchContent)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
+message(STATUS "Finding SDL2..")
 # Find SDL2
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
-
+message(STATUS "Finding OpenGL..")
 # Find OpenGL
 set(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
 
+message(STATUS "Fetching cimgui..")
 # Fetch cimgui (includes imgui as submodule)
 FetchContent_Declare(
   cimgui
@@ -31,22 +32,32 @@ set(CIMGUI_BACKENDS
     ${cimgui_SOURCE_DIR}/imgui/backends/imgui_impl_opengl2.cpp
 )
 
+message(STATUS "Fetching tinyfiledialogs..")
+FetchContent_Declare(
+  tinyfiledialogs
+  GIT_REPOSITORY https://git.code.sf.net/p/tinyfiledialogs/code
+  GIT_TAG master
+)
+FetchContent_MakeAvailable(tinyfiledialogs)
 
 file(GLOB SRC_NCURSES src/main_ncurses.c)
 file(GLOB SRC_SDL src/main_sdl.c src/sdl/*.c)
 file(GLOB SRC_FILES src/budget/*.c)
 
 message(STATUS "SDL2 include dirs: ${SDL2_INCLUDE_DIRS}")
+
 message(STATUS "cimgui source dir: ${cimgui_SOURCE_DIR}")
 message(STATUS "imgui backends: ${CIMGUI_BACKENDS}")
 
 add_executable(mojo-budget-ncurses ${SRC_NCURSES} ${SRC_FILES})
 target_link_libraries(mojo-budget-ncurses ncurses panel)
 
-add_executable(mojo-budget-sdl ${SRC_SDL} ${SRC_FILES} ${CIMGUI_BACKENDS})
+add_executable(mojo-budget-sdl ${SRC_SDL} ${SRC_FILES} ${CIMGUI_BACKENDS} ${tinyfiledialogs_SOURCE_DIR}/tinyfiledialogs.c)
 target_link_libraries(mojo-budget-sdl ${SDL2_LIBRARIES} cimgui OpenGL::GL)
 target_include_directories(mojo-budget-sdl PRIVATE
     ${SDL2_INCLUDE_DIRS}
     ${cimgui_SOURCE_DIR}
+    ${cimgui_SOURCE_DIR}/imgui
     ${cimgui_SOURCE_DIR}/imgui/backends
+    ${tinyfiledialogs_SOURCE_DIR}
 )
