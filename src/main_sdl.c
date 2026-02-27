@@ -1,6 +1,8 @@
 #include <SDL2/SDL.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
 
 #define CIMGUI_USE_SDL2
 #define CIMGUI_USE_OPENGL2
@@ -12,9 +14,11 @@
 
 #include "budget/bill.h"
 #include "sdl/im_menubar.h"
+#include "budget/config.h"
 
 SDL_Window *window = NULL;
 SDL_GLContext *gl_context = NULL;
+
 
 int main(int argc, char *argv[])
 {
@@ -53,8 +57,10 @@ int main(int argc, char *argv[])
 
   ImGuiIO *ioptr = igGetIO_Nil();
  
-  
-  entryMap = LoadEntryMap("default.bud");
+  char defaultPath[1024];
+  snprintf(defaultPath, sizeof(defaultPath), "%s/default.bud", GetConfigDir());
+
+  entryMap = LoadEntryMap(defaultPath);
 
   bool running = true;
   while (running)
@@ -85,7 +91,6 @@ int main(int argc, char *argv[])
     ImGui_ImplOpenGL2_RenderDrawData(igGetDrawData());
     SDL_GL_SwapWindow(window);
   }
-  SaveEntryMap("default.bud", entryMap, FILETYPE_BUD);
   SDL_DestroyWindow(window);
   SDL_Quit();
 

@@ -7,7 +7,7 @@
 #include "tinyfiledialogs.h"
 #include <stb/stb_ds.h>
 #include <stdio.h>
-
+#include "../budget/config.h"
 void DrawMenuBar(bool *running)
 {
   if (igBeginMainMenuBar())
@@ -72,6 +72,16 @@ void DrawMenuBar(bool *running)
         }
         igEndMenu();
       }
+      if (igMenuItem_Bool("Save to default file", NULL, false, true))
+      {
+        char path[1024];
+        snprintf(path, sizeof(path), "%s/default.bud",
+                 GetConfigDir());
+        
+          SaveEntryMap(path, entryMap, FILETYPE_BUD);
+        printf("Saved default budget: %s", path);
+      }
+
       if (igMenuItem_Bool("Exit", NULL, false, true))
       {
         *running = false;
