@@ -103,7 +103,7 @@ int SaveConfig(Config* cfg)
 
   fprintf(file, "windowWidth=%d\n", cfg->window_width);
   fprintf(file, "windowHeight=%d\n", cfg->window_height);
-
+  
   fclose(file);
 
   printf("Successfully saved config: %s\n", path);

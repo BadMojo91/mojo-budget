@@ -192,8 +192,9 @@ BillEntry *LoadEntryMap(const char *file)
     fread(&bill, sizeof(Bill), 1, fp);
     hmput(map, key, bill);
     _nextID++;
-    printf("Loaded bill entry: %s\nID: %lu\n", bill.name, key);
+    //printf("Loaded bill entry: %s\nID: %lu\n", bill.name, key);
   }
+  printf("Loaded %d bills.\n", entryCount);
   fclose(fp);
   return map;
 }
