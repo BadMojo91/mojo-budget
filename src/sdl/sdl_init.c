@@ -17,11 +17,11 @@
 #include "../core/config.h"
 
 
-SDL_Window *window = NULL;
-SDL_GLContext *gl_context = NULL;
+SDL_Window* window = NULL;
+SDL_GLContext* gl_context = NULL;
 
 Config cfg;
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 
   ReadConfig(&cfg);
@@ -36,8 +36,8 @@ int main(int argc, char *argv[])
   }
 
   window = SDL_CreateWindow(
-      "Budget App", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    "Budget App", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
+    SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
   if (!window)
   {
     printf("Failed to create window: %s\n", SDL_GetError());
@@ -62,8 +62,8 @@ int main(int argc, char *argv[])
   ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
   ImGui_ImplOpenGL2_Init();
 
-  ImGuiIO *ioptr = igGetIO_Nil();
- 
+  ImGuiIO* ioptr = igGetIO_Nil();
+
   char defaultPath[1024];
   snprintf(defaultPath, sizeof(defaultPath), "%s/default.bud", GetConfigDir());
 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
       ImGui_ImplSDL2_ProcessEvent(&event);
 
       if (event.type == SDL_QUIT ||
-          (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE))
+        (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE))
       {
         running = false;
       }
@@ -98,6 +98,10 @@ int main(int argc, char *argv[])
     ImGui_ImplOpenGL2_RenderDrawData(igGetDrawData());
     SDL_GL_SwapWindow(window);
   }
+
+  SDL_GetWindowSize(window, &cfg.window_width, &cfg.window_height);
+  SaveConfig(&cfg);
+
   SDL_DestroyWindow(window);
   SDL_Quit();
 
