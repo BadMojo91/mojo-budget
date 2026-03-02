@@ -1,8 +1,9 @@
-#include <SDL2/SDL.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
 #include <sys/stat.h>
+
+#include <SDL2/SDL.h>
+#include <GL/gl.h>
 
 #define CIMGUI_USE_SDL2
 #define CIMGUI_USE_OPENGL2
@@ -10,18 +11,24 @@
 #include "cimgui.h"
 #include "cimgui_impl.h"
 
-#include <GL/gl.h>
+#include "ui_core.h"
 
-#include "budget/bill.h"
-#include "sdl/im_menubar.h"
-#include "budget/config.h"
+#include "../core/bill.h"
+#include "../core/config.h"
+
 
 SDL_Window *window = NULL;
 SDL_GLContext *gl_context = NULL;
 
-
+Config cfg;
 int main(int argc, char *argv[])
 {
+
+  ReadConfig(&cfg);
+
+  int width = cfg.window_width;
+  int height = cfg.window_height;
+
   if (SDL_Init(SDL_INIT_VIDEO) != 0)
   {
     printf("Failed to initialize SDL: %s\n", SDL_GetError());
@@ -29,7 +36,7 @@ int main(int argc, char *argv[])
   }
 
   window = SDL_CreateWindow(
-      "Budget App", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1024, 800,
+      "Budget App", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
       SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
   if (!window)
   {
@@ -85,7 +92,7 @@ int main(int argc, char *argv[])
 
     igRender();
     SDL_GL_MakeCurrent(window, gl_context);
-    glViewport(0, 0, 800, 600);
+    //glViewport(0, 0, 800, 600);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL2_RenderDrawData(igGetDrawData());

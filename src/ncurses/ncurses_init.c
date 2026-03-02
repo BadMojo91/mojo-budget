@@ -1,4 +1,4 @@
-#include "budget/bill.h"
+#include "../core/bill.h"
 #include <ncurses.h>
 #include <panel.h>
 #include <stdlib.h>

@@ -1,5 +1,5 @@
-#ifndef IM_MENUBAR_H
-#define IM_MENUBAR_H
+#ifndef UI_CORE_H
+#define UI_CORE_H
 
 #include <stdbool.h>
 
@@ -7,12 +7,14 @@
 extern "C" {
 #endif
 
+
 void DrawMenuBar(bool* running);
 void DrawBudgetWindow();
 
 void DrawUI(bool* running);
 
+
 #ifdef __cplusplus
 }
 #endif
-#endif /* IM_MENUBAR_H */
+#endif /* UI_CORE_H */
