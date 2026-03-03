@@ -4,15 +4,14 @@
 #include <stdbool.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
+  void DrawMenuBar(bool *running);
+  void DrawBudgetWindow();
 
-void DrawMenuBar(bool* running);
-void DrawBudgetWindow();
-
-void DrawUI(bool* running);
-
+  void DrawUI(bool *running);
 
 #ifdef __cplusplus
 }

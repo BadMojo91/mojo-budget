@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+const char* TrimHomePath(const char* path);
+const char* TrimPath(const char* path);
 char* ConvertToCurrencyString(double amount);
 
 #ifdef __cplusplus

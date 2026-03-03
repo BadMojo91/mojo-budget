@@ -7,14 +7,10 @@
 #include <stdio.h>
 
 #include "../core/bill.h"
-#include "../core/export.h"
 #include "../core/config.h"
+#include "../core/export.h"
 
-
-void DrawMenuBar(bool *running)
-{
-  if (igBeginMainMenuBar())
-  {
+void DrawFileMenu(bool *running){
     if (igBeginMenu("File", true))
     {
       if (igMenuItem_Bool("New", NULL, false, true))
@@ -33,6 +29,11 @@ void DrawMenuBar(bool *running)
             );
         if (path)
           entryMap = LoadEntryMap(path);
+      }
+      if (igBeginMenu("Recent files", true))
+      {
+        igText("Not implemented yet");
+        igEndMenu();
       }
       if (igMenuItem_Bool("Save", NULL, false, true))
       {
@@ -75,13 +76,18 @@ void DrawMenuBar(bool *running)
         }
         igEndMenu();
       }
+      if (igMenuItem_Bool("Open default file", NULL, false, true))
+      {
+        char path[1024];
+        snprintf(path, sizeof(path), "%s/default.bud", GetConfigDir());
+        entryMap = LoadEntryMap(path);
+      }
       if (igMenuItem_Bool("Save to default file", NULL, false, true))
       {
         char path[1024];
-        snprintf(path, sizeof(path), "%s/default.bud",
-                 GetConfigDir());
-        
-          SaveEntryMap(path, entryMap, FILETYPE_BUD);
+        snprintf(path, sizeof(path), "%s/default.bud", GetConfigDir());
+
+        SaveEntryMap(path, entryMap, FILETYPE_BUD);
         printf("Saved default budget: %s", path);
       }
 
@@ -91,6 +97,25 @@ void DrawMenuBar(bool *running)
       }
       igEndMenu();
     }
+}
+
+void DrawAboutMenu()
+{
+  if (igBeginMenu("About", true))
+  {
+    igText("Mojo Budget");
+    igText("Version 1.0.0");
+    igText("A simple budgeting application built with C and ImGui.");
+    igEndMenu();
+  }
+}
+
+void DrawMenuBar(bool *running)
+{
+  if (igBeginMainMenuBar())
+  {
+    DrawFileMenu(running);
+    DrawAboutMenu();
     igEndMainMenuBar();
   }
 }

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-
+#include "utility.h"
 
 
 static char config_dir[1024] = { 0 };
@@ -68,7 +68,9 @@ void ReadConfig(Config* cfg)
       return;
     }
   }
-  printf("Reading config: %s\n", path);
+
+  const char* trimmedPath = TrimHomePath(path);
+  printf("Reading config: %s\n", trimmedPath);
   char line[256];
 
   while (fgets(line, sizeof(line), file))

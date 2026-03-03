@@ -4,8 +4,12 @@
 #include <stdio.h>
 
 #include "bill.h"
+#include "utility.h"
+
+#define MAX_BUDGET_NAME 256
 
 BillEntry *entryMap = NULL;
+char budgetName[MAX_BUDGET_NAME] = {0};
 
 void AddEntry(BillEntry **map, Bill billEntry)
 {
@@ -179,7 +183,9 @@ BillEntry *LoadEntryMap(const char *file)
   if (!fp)
     return NULL;
 
-  printf("Loading entry map from file: %s\n", file);
+  const char* trimmedPath = TrimHomePath(file);
+  fread(budgetName, sizeof(budgetName), 1, fp);
+  printf("Loading budget: %s\n", trimmedPath);
   int entryCount;
   fread(&entryCount, sizeof(int), 1, fp);
 
@@ -199,13 +205,17 @@ BillEntry *LoadEntryMap(const char *file)
   return map;
 }
 
-void SaveEntryMap(const char *file, BillEntry *map, SaveFileType type)
+void SaveEntryMap(const char *filePath, BillEntry *map, SaveFileType type)
 {
+  const char *fileName = TrimPath(filePath);
+  const char *trimmedPath = TrimHomePath(filePath);
+
+  strcpy(budgetName, fileName);
   switch (type)
   {
   case FILETYPE_TXT:
     const char *data = GetEntryMapString(map);
-    FILE *fp = fopen(file, "w");
+    FILE *fp = fopen(filePath, "w");
     if (fp)
     {
       fprintf(fp, "%s", data);
@@ -214,9 +224,12 @@ void SaveEntryMap(const char *file, BillEntry *map, SaveFileType type)
     break;
 
   case FILETYPE_BUD:
-    FILE *fd = fopen(file, "wb");
+    FILE *fd = fopen(filePath, "wb");
     if (fd)
     {
+
+      fwrite(budgetName, sizeof(budgetName), 1, fd);
+      printf("Writing budget: %s\n", trimmedPath);
       int entryCount = hmlen(map);
       fwrite(&entryCount, sizeof(int), 1, fd);
       for (int i = 0; i < entryCount; i++)
