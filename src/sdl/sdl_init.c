@@ -20,6 +20,7 @@
 
 SDL_Window* window = NULL;
 SDL_GLContext* gl_context = NULL;
+static char imgui_ini_path[1024] = { 0 };
 
 Config cfg;
 int main(int argc, char* argv[])
@@ -64,6 +65,12 @@ int main(int argc, char* argv[])
   ImGui_ImplOpenGL2_Init();
 
   ImGuiIO* ioptr = igGetIO_Nil();
+  const char* config_dir = GetConfigDir();
+  if (config_dir)
+  {
+    snprintf(imgui_ini_path, sizeof(imgui_ini_path), "%s/imgui.ini", config_dir);
+    ioptr->IniFilename = imgui_ini_path;
+  }
 
   char defaultPath[1024];
   snprintf(defaultPath, sizeof(defaultPath), "%s/default.bud", GetConfigDir());

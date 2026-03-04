@@ -9,6 +9,7 @@
 #include "../core/bill.h"
 #include "../core/config.h"
 #include "../core/export.h"
+#include "../core/utility.h"
 
 void DrawFileMenu(bool *running)
 {
@@ -125,6 +126,7 @@ void DrawAboutMenu()
     igText("Mojo Budget");
     igText("Version 1.0.0");
     igText("A simple budgeting application built with C and ImGui.");
+    igText("By Ian \"BadMojo\" Vine");
     igEndMenu();
   }
 }
@@ -135,6 +137,13 @@ void DrawMenuBar(bool *running)
   {
     DrawFileMenu(running);
     DrawAboutMenu();
+    
+    float menuBarWidth = igGetWindowWidth();
+    const char* fileName = TrimPath(savePath);
+    float textWidth = igCalcTextSize(fileName, NULL, false, 0.0f).x;
+    igSetCursorPosX((menuBarWidth - textWidth) / 2.0f);
+    igText(fileName);
+
     igEndMainMenuBar();
   }
 }

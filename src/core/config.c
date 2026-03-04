@@ -51,10 +51,6 @@ Config CreateDefaultConfig(void)
 
   cfg.window_height = DEFAULT_WINDOW_HEIGHT;
   cfg.window_width = DEFAULT_WINDOW_WIDTH;
-  for(int i = 0; i < NUM_BILL_COLUMNS; i++){
-    cfg.bill_column_widths[i] = DEFAULT_COLLUMN_WIDTH;
-  }
-  cfg.bill_table_height = DEFAULT_BILL_TABLE_HEIGHT;
   return cfg;
 }
 
@@ -62,11 +58,6 @@ void ReadConfig(Config* cfg)
 {
   cfg->window_width = DEFAULT_WINDOW_WIDTH;
   cfg->window_height = DEFAULT_WINDOW_HEIGHT;
-  cfg->bill_table_height = DEFAULT_BILL_TABLE_HEIGHT;
-  for (int i = 0; i < NUM_BILL_COLUMNS; i++)
-  {
-    cfg->bill_column_widths[i] = DEFAULT_COLLUMN_WIDTH;
-  }
 
   const char* path = GetConfigFilePath();
   FILE* file = fopen(path, "r");
@@ -103,20 +94,6 @@ void ReadConfig(Config* cfg)
       cfg->window_width = atoi(value);
     else if (strcmp(key, "windowHeight") == 0)
       cfg->window_height = atoi(value);
-    else if (strcmp(key, "billColumnWidths") == 0)
-    {
-      char* p = (char*)value;
-      for (int i = 0; i < NUM_BILL_COLUMNS; i++)
-      {
-        cfg->bill_column_widths[i] = strtof(p, &p);
-        if (*p == ',')
-          p++;
-      }
-    }
-    else if (strcmp(key, "billTableHeight") == 0)
-    {
-      cfg->bill_table_height = strtof(value, NULL);
-    }
   }
   fclose(file);
 }
@@ -135,15 +112,6 @@ int SaveConfig(Config* cfg)
 
   fprintf(file, "windowWidth=%d\n", cfg->window_width);
   fprintf(file, "windowHeight=%d\n", cfg->window_height);
-  fprintf(file, "billColumnWidths=");
-  for (int i = 0; i < NUM_BILL_COLUMNS; i++)
-  {
-    fprintf(file, "%f", cfg->bill_column_widths[i]);
-    if (i < NUM_BILL_COLUMNS - 1)
-      fprintf(file, ",");
-  }
-  fprintf(file, "\n");
-  fprintf(file, "billTableHeight=%f\n", cfg->bill_table_height);
   fclose(file);
 
   printf("Successfully saved config: %s\n", path);

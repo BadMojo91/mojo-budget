@@ -3,15 +3,11 @@
 #include "../core/bill.h"
 #include "cimgui.h"
 #include <stb/stb_ds.h>
-#include <math.h>
 #include <stdio.h>
 
-#include "../core/config.h"
-
-extern Config cfg;
-
-static const char* g_freqNames[] = { "Weekly", "Fortnightly", "Monthly",
-  "Quarterly", "Yearly" };
+static const char *g_freqNames[] = {"Weekly", "Fortnightly", "Monthly",
+                                    "Quarterly", "Yearly"};
+static float g_billTableHeight = 0.0f;
 
 typedef struct
 {
@@ -22,20 +18,20 @@ typedef struct
 
 static void ConfigureBudgetWindowLayout()
 {
-  ImGuiViewport* viewport = igGetMainViewport();
+  ImGuiViewport *viewport = igGetMainViewport();
   float menuBarHeight = igGetFrameHeight();
   ImVec2 panelPos = viewport->Pos;
   panelPos.y += menuBarHeight;
   ImVec2 panelSize = viewport->Size;
   panelSize.y -= menuBarHeight;
 
-  igSetNextWindowPos(panelPos, ImGuiCond_Always, (ImVec2) { 0, 0 });
+  igSetNextWindowPos(panelPos, ImGuiCond_Always, (ImVec2){0, 0});
   igSetNextWindowSize(panelSize, ImGuiCond_Always);
 }
 
 static BillTableLayout ComputeBillTableLayout(int entryCount)
 {
-  BillTableLayout layout = { 0 };
+  BillTableLayout layout = {0};
   float rowHeight = igGetFrameHeight() + 4.0f;
   float desiredTableHeight = rowHeight * (float)(entryCount + 2);
   ImVec2_c avail = igGetContentRegionAvail();
@@ -48,11 +44,11 @@ static BillTableLayout ComputeBillTableLayout(int entryCount)
 
   layout.minTableHeight = rowHeight * 4.0f;
   float defaultTableHeight = desiredTableHeight < layout.maxTableHeight
-    ? desiredTableHeight
-    : layout.maxTableHeight;
+                                 ? desiredTableHeight
+                                 : layout.maxTableHeight;
 
-  layout.tableHeight =
-    cfg.bill_table_height > 0.0f ? cfg.bill_table_height : defaultTableHeight;
+  layout.tableHeight = g_billTableHeight > 0.0f ? g_billTableHeight
+                                                : defaultTableHeight;
   if (layout.tableHeight < layout.minTableHeight)
   {
     layout.tableHeight = layout.minTableHeight;
@@ -67,28 +63,24 @@ static BillTableLayout ComputeBillTableLayout(int entryCount)
 
 static void SetupBillsTableColumns()
 {
-  float* widths = cfg.bill_column_widths;
-  igTableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, widths[0], 0);
-  igTableSetupColumn("Frequency", ImGuiTableColumnFlags_WidthFixed, widths[1],
-    0);
-  igTableSetupColumn("Amount", ImGuiTableColumnFlags_WidthFixed, widths[2], 0);
-  igTableSetupColumn("Weekly", ImGuiTableColumnFlags_WidthFixed, widths[3], 0);
-  igTableSetupColumn("Fortnightly", ImGuiTableColumnFlags_WidthFixed,
-    widths[4], 0);
-  igTableSetupColumn("Monthly", ImGuiTableColumnFlags_WidthFixed, widths[5],
-    0);
-  igTableSetupColumn("Quarterly", ImGuiTableColumnFlags_WidthFixed, widths[6],
-    0);
-  igTableSetupColumn("Yearly", ImGuiTableColumnFlags_WidthFixed, widths[7], 0);
+  igTableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 105.0f, 0);
+  igTableSetupColumn("Frequency", ImGuiTableColumnFlags_WidthFixed, 102.0f, 0);
+  igTableSetupColumn("Amount", ImGuiTableColumnFlags_WidthFixed, 64.0f, 0);
+  igTableSetupColumn("Weekly", ImGuiTableColumnFlags_WidthFixed, 64.0f, 0);
+  igTableSetupColumn("Fortnightly", ImGuiTableColumnFlags_WidthFixed, 75.0f,
+                     0);
+  igTableSetupColumn("Monthly", ImGuiTableColumnFlags_WidthFixed, 75.0f, 0);
+  igTableSetupColumn("Quarterly", ImGuiTableColumnFlags_WidthFixed, 75.0f, 0);
+  igTableSetupColumn("Yearly", ImGuiTableColumnFlags_WidthFixed, 75.0f, 0);
   igTableSetupColumn("Parameters",
-    ImGuiTableColumnFlags_WidthFixed |
-    ImGuiTableColumnFlags_NoResize |
-    ImGuiTableColumnFlags_NoHide,
-    164, 0);
+                     ImGuiTableColumnFlags_WidthFixed |
+                         ImGuiTableColumnFlags_NoResize |
+                         ImGuiTableColumnFlags_NoHide,
+                     164, 0);
   igTableHeadersRow();
 }
 
-static void DrawBillNameColumn(Bill* bill)
+static void DrawBillNameColumn(Bill *bill)
 {
   igTableSetColumnIndex(0);
   if (bill->locked)
@@ -102,7 +94,7 @@ static void DrawBillNameColumn(Bill* bill)
   }
 }
 
-static void DrawBillFrequencyColumn(Bill* bill)
+static void DrawBillFrequencyColumn(Bill *bill)
 {
   igTableSetColumnIndex(1);
   if (bill->locked)
@@ -118,7 +110,7 @@ static void DrawBillFrequencyColumn(Bill* bill)
   }
 }
 
-static void DrawBillPaymentColumn(Bill* bill)
+static void DrawBillPaymentColumn(Bill *bill)
 {
   igTableSetColumnIndex(2);
   if (bill->locked)
@@ -132,7 +124,7 @@ static void DrawBillPaymentColumn(Bill* bill)
   }
 }
 
-static void GetBillConvertedAmounts(Bill* bill, double amounts[5])
+static void GetBillConvertedAmounts(Bill *bill, double amounts[5])
 {
   amounts[WEEKLY] = ConvertBillPaymentFrequency(bill, WEEKLY);
   amounts[FORTNIGHTLY] = ConvertBillPaymentFrequency(bill, FORTNIGHTLY);
@@ -141,8 +133,8 @@ static void GetBillConvertedAmounts(Bill* bill, double amounts[5])
   amounts[YEARLY] = ConvertBillPaymentFrequency(bill, YEARLY);
 }
 
-static void AccumulateBillTotals(Bill* bill, const double amounts[5],
-  double totals[5])
+static void AccumulateBillTotals(Bill *bill, const double amounts[5],
+                                 double totals[5])
 {
   if (!bill->include_in_totals)
   {
@@ -170,23 +162,23 @@ static void DrawBillConvertedColumns(const double amounts[5])
   igText("$%.2f", amounts[YEARLY]);
 }
 
-static void DrawBillActions(BillEntry* entry, bool* removeRequested,
-  uint64_t* removeKey)
+static void DrawBillActions(BillEntry *entry, bool *removeRequested,
+                            uint64_t *removeKey)
 {
-  Bill* bill = &entry->value;
+  Bill *bill = &entry->value;
   igTableSetColumnIndex(8);
 
-  const char* useLabel = bill->include_in_totals ? "On" : "Off";
-  const char* lockLabel = bill->locked ? "Unlock" : "Lock";
+  const char *useLabel = bill->include_in_totals ? "On" : "Off";
+  const char *lockLabel = bill->locked ? "Unlock" : "Lock";
   const float spacing = 4.0f;
   const float buttonPadding = 16.0f;
   float actionsWidth = igGetContentRegionAvail().x;
   float useWidth =
-    igCalcTextSize(useLabel, NULL, false, -1.0f).x + buttonPadding;
+      igCalcTextSize(useLabel, NULL, false, -1.0f).x + buttonPadding;
   float lockWidth =
-    igCalcTextSize(lockLabel, NULL, false, -1.0f).x + buttonPadding;
+      igCalcTextSize(lockLabel, NULL, false, -1.0f).x + buttonPadding;
   float deleteWidth =
-    igCalcTextSize("Delete", NULL, false, -1.0f).x + buttonPadding;
+      igCalcTextSize("Delete", NULL, false, -1.0f).x + buttonPadding;
 
   if (igSmallButton(useLabel))
   {
@@ -203,8 +195,9 @@ static void DrawBillActions(BillEntry* entry, bool* removeRequested,
     bill->locked = !bill->locked;
   }
 
-  if (actionsWidth >= (useWidth + spacing + lockWidth + spacing + deleteWidth) ||
-    actionsWidth >= (lockWidth + spacing + deleteWidth))
+  if (actionsWidth >=
+          (useWidth + spacing + lockWidth + spacing + deleteWidth) ||
+      actionsWidth >= (lockWidth + spacing + deleteWidth))
   {
     igSameLine(0.0f, spacing);
   }
@@ -216,11 +209,11 @@ static void DrawBillActions(BillEntry* entry, bool* removeRequested,
   }
 }
 
-static bool DrawBillRow(BillEntry* entry, double totals[5],
-  bool* removeRequested, uint64_t* removeKey)
+static bool DrawBillRow(BillEntry *entry, double totals[5],
+                        bool *removeRequested, uint64_t *removeKey)
 {
-  Bill* bill = &entry->value;
-  double amounts[5] = { 0.0 };
+  Bill *bill = &entry->value;
+  double amounts[5] = {0.0};
 
   igTableNextRow(0, 0);
   igPushID_Int(entry->key);
@@ -238,20 +231,7 @@ static bool DrawBillRow(BillEntry* entry, double totals[5],
   return *removeRequested;
 }
 
-static void PersistBillColumnWidths()
-{
-  for (int i = 0; i < NUM_BILL_COLUMNS; i++)
-  {
-    float currentWidth = igGetColumnWidth(i);
-    if (currentWidth > 0.0f &&
-      fabsf(cfg.bill_column_widths[i] - currentWidth) > 0.5f)
-    {
-      cfg.bill_column_widths[i] = currentWidth;
-    }
-  }
-}
-
-static void DrawBillTableResizeGrip(const BillTableLayout* layout)
+static void DrawBillTableResizeGrip(const BillTableLayout *layout)
 {
   ImVec2_c gripAvail = igGetContentRegionAvail();
   float gripHeight = 8.0f;
@@ -262,7 +242,7 @@ static void DrawBillTableResizeGrip(const BillTableLayout* layout)
   }
 
   igPushID_Str("BillTableResizeGrip");
-  igInvisibleButton("##resize", (ImVec2) { gripWidth, gripHeight }, 0);
+  igInvisibleButton("##resize", (ImVec2){gripWidth, gripHeight}, 0);
   bool resizeHovered = igIsItemHovered(ImGuiHoveredFlags_None);
   bool resizeActive = igIsItemActive();
 
@@ -276,18 +256,18 @@ static void DrawBillTableResizeGrip(const BillTableLayout* layout)
     float delta = igGetIO_Nil()->MouseDelta.y;
     if (delta != 0.0f)
     {
-      if (cfg.bill_table_height <= 0.0f)
+      if (g_billTableHeight <= 0.0f)
       {
-        cfg.bill_table_height = layout->tableHeight;
+        g_billTableHeight = layout->tableHeight;
       }
-      cfg.bill_table_height += delta;
-      if (cfg.bill_table_height < layout->minTableHeight)
+      g_billTableHeight += delta;
+      if (g_billTableHeight < layout->minTableHeight)
       {
-        cfg.bill_table_height = layout->minTableHeight;
+        g_billTableHeight = layout->minTableHeight;
       }
-      if (cfg.bill_table_height > layout->maxTableHeight)
+      if (g_billTableHeight > layout->maxTableHeight)
       {
-        cfg.bill_table_height = layout->maxTableHeight;
+        g_billTableHeight = layout->maxTableHeight;
       }
     }
   }
@@ -299,12 +279,12 @@ static void DrawAddBillButton()
   ImVec2 avail = igGetContentRegionAvail();
   float buttonWidth = 80.0f;
   igSetCursorPosX(igGetCursorPosX() + avail.x - buttonWidth);
-  if (!igButton("Add", (ImVec2) { buttonWidth, 0 }))
+  if (!igButton("Add", (ImVec2){buttonWidth, 0}))
   {
     return;
   }
 
-  Bill defaultBill = { 0 };
+  Bill defaultBill = {0};
   snprintf(defaultBill.name, sizeof(defaultBill.name), "New Bill");
   defaultBill.frequency = MONTHLY;
   defaultBill.payment = 0.0;
@@ -313,18 +293,16 @@ static void DrawAddBillButton()
   AddEntry(&entryMap, defaultBill);
 }
 
-static void DrawBillsTable(const BillTableLayout* layout, double totals[5],
-  bool* removeRequested, uint64_t* removeKey)
+static void DrawBillsTable(const BillTableLayout *layout, double totals[5],
+                           bool *removeRequested, uint64_t *removeKey)
 {
   if (!igBeginTable("BillsEntries", 9,
-    ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
-    ImGuiTableFlags_Resizable |
-    ImGuiTableFlags_SizingFixedFit |
-    ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY |
-    ImGuiTableFlags_NoKeepColumnsVisible,
-    (ImVec2) {
-    0, layout->tableHeight
-  }, 0))
+                    ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                        ImGuiTableFlags_Resizable |
+                        ImGuiTableFlags_SizingFixedFit |
+                        ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY |
+                        ImGuiTableFlags_NoKeepColumnsVisible,
+                    (ImVec2){0, layout->tableHeight}, 0))
   {
     return;
   }
@@ -340,7 +318,6 @@ static void DrawBillsTable(const BillTableLayout* layout, double totals[5],
     }
   }
 
-  PersistBillColumnWidths();
   igEndTable();
 
   DrawBillTableResizeGrip(layout);
@@ -360,15 +337,15 @@ static void DrawBillTotals(const double totals[5])
 
 void DrawBudgetWindow()
 {
-  double totals[5] = { 0.0 };
+  double totals[5] = {0.0};
   bool removeRequested = false;
   uint64_t removeKey = 0;
 
   ConfigureBudgetWindowLayout();
 
   if (!igBegin("Bills", NULL,
-    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
-    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
+               ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
   {
     igEnd();
     return;
@@ -387,4 +364,3 @@ void DrawBudgetWindow()
 
   igEnd();
 }
-
