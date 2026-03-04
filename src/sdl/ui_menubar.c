@@ -10,93 +10,112 @@
 #include "../core/config.h"
 #include "../core/export.h"
 
-void DrawFileMenu(bool *running){
-    if (igBeginMenu("File", true))
+void DrawFileMenu(bool *running)
+{
+  if (igBeginMenu("File", true))
+  {
+    if (igMenuItem_Bool("New", NULL, false, true))
     {
-      if (igMenuItem_Bool("New", NULL, false, true))
+      ClearEntries(&entryMap);
+    }
+    if (igMenuItem_Bool("Open", NULL, false, true))
+    {
+      const char *path =
+          tinyfd_openFileDialog("Open File",               // title
+                                "",                        // default path
+                                1,                         // filter count
+                                (const char *[]){"*.bud"}, // filter
+                                "Budget Entry Maps",       // filter description
+                                0                          // single select
+          );
+      if (path)
+        entryMap = BudgetLoad(path);
+    }
+    if (igMenuItem_Bool("Save", NULL, false, true))
+    {
+      if (strlen(savePath) == 0)
       {
-        ClearEntries(&entryMap);
-      }
-      if (igMenuItem_Bool("Open", NULL, false, true))
-      {
-        const char *path =
-            tinyfd_openFileDialog("Open File",               // title
-                                  "",                        // default path
-                                  1,                         // filter count
-                                  (const char *[]){"*.bud"}, // filter
-                                  "Budget Entry Maps", // filter description
-                                  0                    // single select
-            );
-        if (path)
-          entryMap = LoadEntryMap(path);
-      }
-      if (igBeginMenu("Recent files", true))
-      {
-        igText("Not implemented yet");
-        igEndMenu();
-      }
-      if (igMenuItem_Bool("Save", NULL, false, true))
-      {
-        const char *path = tinyfd_saveFileDialog("Save Budget", "default.bud",
-                                                 1, (const char *[]){"*.bud"},
+
+        const char *path = tinyfd_saveFileDialog("Save As", "default.bud", 1,
+                                                 (const char *[]){"*.bud"},
                                                  "Budget File (*.bud)");
 
         if (path)
-          SaveEntryMap(path, entryMap, FILETYPE_BUD);
+          BudgetSave(entryMap, path);
       }
-      if (igMenuItem_Bool("Save As", NULL, false, true))
+      else
       {
-        const char *path = tinyfd_saveFileDialog("Save Budget", "default.bud",
-                                                 1, (const char *[]){"*.bud"},
-                                                 "Budget File (*.bud)");
+        BudgetSave(entryMap, savePath);
+      }
+    }
+    if (igMenuItem_Bool("Save As", NULL, false, true))
+    {
+      const char *path = tinyfd_saveFileDialog("Save As", "default.bud", 1,
+                                               (const char *[]){"*.bud"},
+                                               "Budget File (*.bud)");
+
+      if (path)
+        BudgetSave(entryMap, path);
+    }
+    if (igBeginMenu("Recent files", true))
+    {
+      igText("Not implemented yet");
+      igEndMenu();
+    }
+
+    igSeparator();
+
+    if (igBeginMenu("Export", true))
+    {
+      if (igMenuItem_Bool("Text File (*.txt)", NULL, false, true))
+      {
+        const char *path = tinyfd_saveFileDialog("Export As TXT", "budget.txt",
+                                                 1, (const char *[]){"*.txt"},
+                                                 "Text File (*.txt)");
 
         if (path)
-          SaveEntryMap(path, entryMap, FILETYPE_BUD);
+          ExportAsTXT(entryMap, path);
       }
-      if (igBeginMenu("Export", true))
+      if (igMenuItem_Bool("CSV File (*.csv)", NULL, false, true))
       {
-        if (igMenuItem_Bool("Text File (*.txt)", NULL, false, true))
-        {
-          const char *path = tinyfd_saveFileDialog(
-              "Export As TXT", "budget.txt", 1, (const char *[]){"*.txt"},
-              "Text File (*.txt)");
 
-          if (path)
-            SaveEntryMap(path, entryMap, FILETYPE_TXT);
-        }
-        if (igMenuItem_Bool("CSV File (*.csv)", NULL, false, true))
-        {
+        const char *path = tinyfd_saveFileDialog("Export As CSV", "budget.csv",
+                                                 1, (const char *[]){"*.csv"},
+                                                 "CSV File (*.csv)");
 
-          const char *path = tinyfd_saveFileDialog(
-              "Export As CSV", "budget.csv", 1, (const char *[]){"*.csv"},
-              "CSV File (*.csv)");
-
-          if (path)
-            ExportAsCSV(&entryMap, path);
-        }
-        igEndMenu();
+        if (path)
+          ExportAsCSV(entryMap, path);
       }
+      igEndMenu();
+    }
+    if (igBeginMenu("Default", true))
+    {
       if (igMenuItem_Bool("Open default file", NULL, false, true))
       {
         char path[1024];
         snprintf(path, sizeof(path), "%s/default.bud", GetConfigDir());
-        entryMap = LoadEntryMap(path);
+        entryMap = BudgetLoad(path);
       }
       if (igMenuItem_Bool("Save to default file", NULL, false, true))
       {
         char path[1024];
         snprintf(path, sizeof(path), "%s/default.bud", GetConfigDir());
 
-        SaveEntryMap(path, entryMap, FILETYPE_BUD);
+        BudgetSave(entryMap, path);
         printf("Saved default budget: %s", path);
       }
-
-      if (igMenuItem_Bool("Exit", NULL, false, true))
-      {
-        *running = false;
+      if(igMenuItem_Bool("Reset Default Configuration", NULL, false, true)){
+        Config cfg = CreateDefaultConfig();
+        SaveConfig(&cfg);
       }
       igEndMenu();
     }
+    if (igMenuItem_Bool("Exit", NULL, false, true))
+    {
+      *running = false;
+    }
+    igEndMenu();
+  }
 }
 
 void DrawAboutMenu()

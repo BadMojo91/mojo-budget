@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include "utility.h"
 
+Config config;
 
 static char config_dir[1024] = { 0 };
 const char* GetConfigDir(void)
@@ -42,6 +43,19 @@ const char* GetConfigFilePath()
 
   snprintf(config_path, sizeof(config_path), "%s/config.cfg", GetConfigDir());
   return config_path;
+}
+
+Config CreateDefaultConfig(void)
+{
+  Config cfg;
+
+  cfg.window_height = DEFAULT_WINDOW_HEIGHT;
+  cfg.window_width = DEFAULT_WINDOW_WIDTH;
+  for(int i = 0; i < NUM_BILL_COLUMNS; i++){
+    cfg.bill_column_widths[i] = DEFAULT_COLLUMN_WIDTH;
+  }
+  cfg.bill_table_height = DEFAULT_BILL_TABLE_HEIGHT;
+  return cfg;
 }
 
 void ReadConfig(Config* cfg)
@@ -136,3 +150,4 @@ int SaveConfig(Config* cfg)
   printf("[Window]\n%dx%d\n", cfg->window_width, cfg->window_height);
   return 1;
 }
+

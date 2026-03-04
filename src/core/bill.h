@@ -8,6 +8,9 @@
 extern "C" {
 #endif
 
+  #define MAX_BUDGET_NAME 256
+  #define MAX_BILL_NAME 256
+
   typedef enum {
     WEEKLY,
     FORTNIGHTLY,
@@ -17,7 +20,7 @@ extern "C" {
   } PaymentFrequency;
 
   typedef struct {
-    char name[256];
+    char name[MAX_BILL_NAME];
     PaymentFrequency frequency;
     double payment;
     bool include_in_totals;
@@ -30,7 +33,7 @@ extern "C" {
   } BillEntry;
 
   typedef enum { FILETYPE_TXT, FILETYPE_BUD } SaveFileType;
-
+  extern char budgetName[MAX_BUDGET_NAME];
   extern BillEntry* entryMap;
   static uint64_t _nextID = 0;
 

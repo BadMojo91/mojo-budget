@@ -6,7 +6,6 @@
 #include "bill.h"
 #include "utility.h"
 
-#define MAX_BUDGET_NAME 256
 
 BillEntry *entryMap = NULL;
 char budgetName[MAX_BUDGET_NAME] = {0};

@@ -1,4 +1,5 @@
 #include "../core/bill.h"
+#include "../core/export.h"
 #include <ncurses.h>
 #include <panel.h>
 #include <stdlib.h>
@@ -7,7 +8,7 @@
 
 int main(int argc, char *argv[]) {
   if(argc > 1) {
-    entryMap = LoadEntryMap(argv[1]);
+    entryMap = BudgetLoad(argv[1]);
     if(!entryMap){
       printf("Failed to load file: %s\n", argv[1]);
       return 1;

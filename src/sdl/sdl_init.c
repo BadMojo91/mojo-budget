@@ -15,6 +15,7 @@
 
 #include "../core/bill.h"
 #include "../core/config.h"
+#include "../core/export.h"
 
 
 SDL_Window* window = NULL;
@@ -67,7 +68,7 @@ int main(int argc, char* argv[])
   char defaultPath[1024];
   snprintf(defaultPath, sizeof(defaultPath), "%s/default.bud", GetConfigDir());
 
-  entryMap = LoadEntryMap(defaultPath);
+  entryMap = BudgetLoad(defaultPath);
 
   bool running = true;
   while (running)
@@ -97,6 +98,8 @@ int main(int argc, char* argv[])
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL2_RenderDrawData(igGetDrawData());
     SDL_GL_SwapWindow(window);
+
+    SDL_Delay(16);
   }
 
   SDL_GetWindowSize(window, &cfg.window_width, &cfg.window_height);
