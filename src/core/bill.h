@@ -31,11 +31,23 @@ extern "C" {
     uint64_t key;
     Bill value;
   } BillEntry;
+ 
+  typedef struct {
+    char name[64];
+    double income;
+    bool enable;
+  } Income;
+
+  typedef struct {
+    uint64_t key;
+    Income value;
+  } IncomeEntry; 
+  
 
   typedef enum { FILETYPE_TXT, FILETYPE_BUD } SaveFileType;
   extern char budgetName[MAX_BUDGET_NAME];
   extern BillEntry* entryMap;
-  static uint64_t _nextID = 0;
+  extern uint64_t _nextID;
 
   void AddEntry(BillEntry** map, Bill entry);
   void RemoveEntry(BillEntry** map, uint64_t id);
@@ -46,8 +58,8 @@ extern "C" {
   const char* GetTotalPaymentsByFrequency(BillEntry* map);
   const char* GetEntryMapString(BillEntry* map);
   void PrintEntryMap(BillEntry* map);
-  BillEntry* LoadEntryMap(const char* file);
-  void SaveEntryMap(const char* file, BillEntry* map, SaveFileType type);
+  // deprecated BillEntry* LoadEntryMap(const char* file);
+  // deprecated void SaveEntryMap(const char* file, BillEntry* map, SaveFileType type);
 #ifdef __cplusplus
 }
 #endif

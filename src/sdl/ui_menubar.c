@@ -142,7 +142,7 @@ void DrawMenuBar(bool *running)
     const char* fileName = TrimPath(savePath);
     float textWidth = igCalcTextSize(fileName, NULL, false, 0.0f).x;
     igSetCursorPosX((menuBarWidth - textWidth) / 2.0f);
-    igText(fileName);
+    igText("%s", fileName);
 
     igEndMainMenuBar();
   }

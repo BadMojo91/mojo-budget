@@ -9,6 +9,7 @@
 
 BillEntry *entryMap = NULL;
 char budgetName[MAX_BUDGET_NAME] = {0};
+uint64_t _nextID = 0;
 
 void AddEntry(BillEntry **map, Bill billEntry)
 {
@@ -21,32 +22,35 @@ void AddEntry(BillEntry **map, Bill billEntry)
 
 void RemoveEntry(BillEntry **map, uint64_t id)
 {
-  int entryCount = hmlen(*map);
   hmdel(*map, id);
+  int entryCount = hmlen(*map);
+  
+  Bill* bills = NULL;
+  uint64_t *keys = NULL;
+  int shiftCount = 0;
 
-  // Shift keys after the removed id
-  for (int i = 0; i < entryCount; i++)
+  for(int i = 0; i < entryCount; i++)
   {
-    if ((*map)[i].key > id)
+    if((*map)[i].key > id)
     {
-      Bill bill = (*map)[i].value;
-      uint64_t oldKey = (*map)[i].key;
-      hmdel(*map, oldKey);
-      hmput(*map, oldKey - 1, bill);
+      bills = realloc(bills, (shiftCount + 1) * sizeof(Bill));
+      keys = realloc(keys, (shiftCount + 1) * sizeof(uint64_t));
+      bills[shiftCount] = (*map)[i].value;
+      keys[shiftCount] = (*map)[i].key;
+      shiftCount++;
     }
   }
 
-  // Update _nextID to be highest key + 1
-  uint64_t maxKey = 0;
-  entryCount = hmlen(*map);
-  for (int i = 0; i < entryCount; i++)
+  for(int i = 0; i < shiftCount; i++)
   {
-    if ((*map)[i].key > maxKey)
-    {
-      maxKey = (*map)[i].key;
-    }
+    hmdel(*map, keys[i]);
+    hmput(*map, keys[i] - 1, bills[i]);
   }
-  _nextID = maxKey + 1;
+
+  free(bills);
+  free(keys);
+
+  _nextID = (hmlen(map) == 0) ? 0 : _nextID - 1;
 }
 
 void ClearEntries(BillEntry **map)
@@ -122,7 +126,7 @@ const char *GetTotalPaymentsByFrequency(BillEntry *map)
 
 const char *GetEntryMapString(BillEntry *map)
 {
-  static char result[4096];
+  static char result[32768]; // 32KB buffer should hold over 200 entries comfortably
   int entryCount = hmlen(map);
   char line[256];
 
@@ -174,70 +178,6 @@ const char *GetEntryMapString(BillEntry *map)
 
   return result;
 }
+
 void PrintEntryMap(BillEntry *map) { printf("%s", GetEntryMapString(map)); }
 
-BillEntry *LoadEntryMap(const char *file)
-{
-  FILE *fp = fopen(file, "rb");
-  if (!fp)
-    return NULL;
-
-  const char* trimmedPath = TrimHomePath(file);
-  fread(budgetName, sizeof(budgetName), 1, fp);
-  printf("Loading budget: %s\n", trimmedPath);
-  int entryCount;
-  fread(&entryCount, sizeof(int), 1, fp);
-
-  BillEntry *map = NULL;
-  for (int i = 0; i < entryCount; i++)
-  {
-    uint64_t key;
-    Bill bill;
-    fread(&key, sizeof(uint64_t), 1, fp);
-    fread(&bill, sizeof(Bill), 1, fp);
-    hmput(map, key, bill);
-    _nextID++;
-    //printf("Loaded bill entry: %s\nID: %lu\n", bill.name, key);
-  }
-  printf("Loaded %d bills.\n", entryCount);
-  fclose(fp);
-  return map;
-}
-
-void SaveEntryMap(const char *filePath, BillEntry *map, SaveFileType type)
-{
-  const char *fileName = TrimPath(filePath);
-  const char *trimmedPath = TrimHomePath(filePath);
-
-  strcpy(budgetName, fileName);
-  switch (type)
-  {
-  case FILETYPE_TXT:
-    const char *data = GetEntryMapString(map);
-    FILE *fp = fopen(filePath, "w");
-    if (fp)
-    {
-      fprintf(fp, "%s", data);
-      fclose(fp);
-    }
-    break;
-
-  case FILETYPE_BUD:
-    FILE *fd = fopen(filePath, "wb");
-    if (fd)
-    {
-
-      fwrite(budgetName, sizeof(budgetName), 1, fd);
-      printf("Writing budget: %s\n", trimmedPath);
-      int entryCount = hmlen(map);
-      fwrite(&entryCount, sizeof(int), 1, fd);
-      for (int i = 0; i < entryCount; i++)
-      {
-        fwrite(&map[i].key, sizeof(uint64_t), 1, fd);
-        fwrite(&map[i].value, sizeof(Bill), 1, fd);
-      }
-      fclose(fd);
-    }
-    break;
-  }
-}

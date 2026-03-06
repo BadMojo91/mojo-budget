@@ -2,6 +2,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+// Anything other than zero is an error
+// eg. if(CheckFile(file, filePath, "export") != 0) return;
+int CheckFile(FILE* file, const char* filePath, const char *func)
+{
+  if (!file)
+  {
+    fprintf(stderr, "Could not %s file: %s\n%s\n", func, filePath,
+            strerror(errno));
+    return errno;
+  }
+  return 0;
+}
 
 const char *TrimHomePath(const char *path)
 {
