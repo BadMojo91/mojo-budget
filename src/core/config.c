@@ -2,8 +2,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include "utility.h"
+
+#ifdef _WIN32
+  #include <windows.h>
+  #include <direct.h>
+  #include <sys/stat.h>
+  #define MKDIR(path) _mkdir(path)
+  #define PATH_SEP "\\"
+#else
+  #include <sys/stat.h>
+  #define MKDIR(path) mkdir(path, 0755)
+  #define PATH_SEP "/"
+#endif
 
 Config config;
 
@@ -13,19 +24,28 @@ const char* GetConfigDir(void)
   if (config_dir[0] != '\0')
     return config_dir;
 
+#ifdef _WIN32
+  const char* appdata = getenv("APPDATA");
+  if (!appdata)
+  {
+    fprintf(stderr, "Could not determine AppData directory\n");
+    return NULL;
+  }
+  snprintf(config_dir, sizeof(config_dir), "%s\\mojo-budget", appdata);
+#else
   const char* home = getenv("HOME");
   if (!home)
   {
     fprintf(stderr, "Could not determine home directory\n");
     return NULL;
   }
-
   snprintf(config_dir, sizeof(config_dir), "%s/.config/mojo-budget", home);
+#endif
 
   struct stat st = { 0 };
   if (stat(config_dir, &st) == -1)
   {
-    if (mkdir(config_dir, 0755) == -1)
+    if (MKDIR(config_dir) == -1)
     {
       fprintf(stderr, "Could not create config directory: %s\n", config_dir);
       return NULL;

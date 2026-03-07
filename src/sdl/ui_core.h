@@ -8,7 +8,7 @@ extern "C"
 {
 #endif
 
-  void DrawMenuBar(bool *running);
+  void DrawAppMenuBar(bool *running);
   void DrawBudgetWindow();
 
   void DrawUI(bool *running);

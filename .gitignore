@@ -21,6 +21,7 @@
 
 # Build directories
 /build/
+/build-win/
 /bin/
 /lib/
 

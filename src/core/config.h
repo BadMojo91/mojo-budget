@@ -20,14 +20,14 @@ extern "C" {
 
   Config CreateDefaultConfig(void);
 
-// Config file path: ~/.config/mojo-budget
+// Config file path: ~/.config/mojo-budget (Linux) or %APPDATA%\mojo-budget (Windows)
 // Reads config from file, or creates default config if file doesn't exist
   void ReadConfig(Config* config);
 
 // Saves config to file, returns 1 on success, 0 on failure
   int SaveConfig(Config* config);
 
-// Returns the user config path: /home/<user>/.config/mojo-budget
+// Returns the user config directory: ~/.config/mojo-budget (Linux) or %APPDATA%\mojo-budget (Windows)
   const char* GetConfigDir(void);
   
 

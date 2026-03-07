@@ -144,14 +144,14 @@ void DrawAboutMenu()
   if (igBeginMenu("About", true))
   {
     igText("Mojo Budget");
-    igText("Version 1.0.0");
-    igText("A simple budgeting application built with C and ImGui.");
+    igText("Version 1.1.0");
+    igText("A simple budgeting application.");
     igText("By Ian \"BadMojo\" Vine");
     igEndMenu();
   }
 }
 
-void DrawMenuBar(bool *running)
+void DrawAppMenuBar(bool *running)
 {
   if (igBeginMainMenuBar())
   {
@@ -170,6 +170,6 @@ void DrawMenuBar(bool *running)
 
 void DrawUI(bool *running)
 {
-  DrawMenuBar(running);
+  DrawAppMenuBar(running);
   DrawBudgetWindow();
 }
