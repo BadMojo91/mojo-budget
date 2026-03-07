@@ -4,6 +4,7 @@
 #include "cimgui.h"
 #include <stb/stb_ds.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static const char *g_freqNames[] = {"Weekly", "Fortnightly", "Monthly",
                                     "Quarterly", "Yearly"};
@@ -115,7 +116,9 @@ static void DrawBillPaymentColumn(Bill *bill)
   igTableSetColumnIndex(2);
   if (bill->locked)
   {
-    igText("$%.2f", bill->payment);
+    const char *s = ConvertDoubleToString(bill->payment);
+    igText("$%s", s);
+    free((void *)s);
   }
   else
   {
@@ -150,16 +153,32 @@ static void AccumulateBillTotals(Bill *bill, const double amounts[5],
 
 static void DrawBillConvertedColumns(const double amounts[5])
 {
+  const char *s;
+
   igTableSetColumnIndex(3);
-  igText("$%.2f", amounts[WEEKLY]);
+  s = ConvertDoubleToString(amounts[WEEKLY]);
+  igText("$%s", s);
+  free((void *)s);
+
   igTableSetColumnIndex(4);
-  igText("$%.2f", amounts[FORTNIGHTLY]);
+  s = ConvertDoubleToString(amounts[FORTNIGHTLY]);
+  igText("$%s", s);
+  free((void *)s);
+
   igTableSetColumnIndex(5);
-  igText("$%.2f", amounts[MONTHLY]);
+  s = ConvertDoubleToString(amounts[MONTHLY]);
+  igText("$%s", s);
+  free((void *)s);
+
   igTableSetColumnIndex(6);
-  igText("$%.2f", amounts[QUARTERLY]);
+  s = ConvertDoubleToString(amounts[QUARTERLY]);
+  igText("$%s", s);
+  free((void *)s);
+
   igTableSetColumnIndex(7);
-  igText("$%.2f", amounts[YEARLY]);
+  s = ConvertDoubleToString(amounts[YEARLY]);
+  igText("$%s", s);
+  free((void *)s);
 }
 
 static void DrawBillActions(BillEntry *entry, bool *removeRequested,
@@ -326,13 +345,30 @@ static void DrawBillsTable(const BillTableLayout *layout, double totals[5],
 
 static void DrawBillTotals(const double totals[5])
 {
+  const char *s;
+
   igSeparator();
   igText("Totals (enabled bills)");
-  igText("Weekly: $%.2f", totals[WEEKLY]);
-  igText("Fortnightly: $%.2f", totals[FORTNIGHTLY]);
-  igText("Monthly: $%.2f", totals[MONTHLY]);
-  igText("Quarterly: $%.2f", totals[QUARTERLY]);
-  igText("Yearly: $%.2f", totals[YEARLY]);
+
+  s = ConvertDoubleToString(totals[WEEKLY]);
+  igText("Weekly: $%s", s);
+  free((void *)s);
+
+  s = ConvertDoubleToString(totals[FORTNIGHTLY]);
+  igText("Fortnightly: $%s", s);
+  free((void *)s);
+
+  s = ConvertDoubleToString(totals[MONTHLY]);
+  igText("Monthly: $%s", s);
+  free((void *)s);
+
+  s = ConvertDoubleToString(totals[QUARTERLY]);
+  igText("Quarterly: $%s", s);
+  free((void *)s);
+
+  s = ConvertDoubleToString(totals[YEARLY]);
+  igText("Yearly: $%s", s);
+  free((void *)s);
 }
 
 void DrawBudgetWindow()

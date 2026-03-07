@@ -6,28 +6,25 @@ Important:
 =================
 Nagging:
 =================
-+ Add commas to numbers ie.. 1000 10,000 100,000 and so on
-+ Fix the default width of each column to better fit the application window size
-  note: maybe make the name space dynamic and fix the rest so that it always fits.
++ Fix export to xlsx spreadsheet formatting
 
 =================
 Maybe:
 =================
 + Settings menu
-  - double height bill view (calculated amounts underneath rather than next to bill)
 
 =================
 Bugs:
 =================
-+ SDL window title says "Budget App" instead of "Mojo Budget"
-+ XLSX export doesnt properly export the correct formulae
++ XLSX export doesnt properly export the correct formula
+
 =================
 Features:
 =================
 
 Yeah:
 + Income and Expenses
-+ Saving to other more advanced spreadsheet formats
++ Shopping lists
 
 Meh:
 + Gui Themes

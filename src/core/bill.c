@@ -2,6 +2,7 @@
 #include <stb/stb_ds.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "bill.h"
 #include "utility.h"
@@ -10,6 +11,49 @@
 BillEntry *entryMap = NULL;
 char budgetName[MAX_BUDGET_NAME] = {0};
 uint64_t _nextID = 0;
+
+const char* ConvertDoubleToString(double value)
+{
+  bool showCents = value < 10000.0;
+
+  // Split into integer and fractional parts, rounding appropriately
+  long long intPart;
+  int cents;
+  if (showCents)
+  {
+    long long totalCents = (long long)(value * 100.0 + 0.5);
+    intPart = totalCents / 100;
+    cents = (int)(totalCents % 100);
+  }
+  else
+  {
+    intPart = (long long)(value + 0.5);
+    cents = 0;
+  }
+
+  // Format the integer part as a plain string, then insert commas
+  char intBuf[32];
+  snprintf(intBuf, sizeof(intBuf), "%lld", intPart);
+  int intLen = strlen(intBuf);
+
+  char withCommas[48];
+  int j = 0;
+  for (int i = 0; i < intLen; i++)
+  {
+    if (i > 0 && (intLen - i) % 3 == 0)
+      withCommas[j++] = ',';
+    withCommas[j++] = intBuf[i];
+  }
+  withCommas[j] = '\0';
+
+  char result[64];
+  if (showCents)
+    snprintf(result, sizeof(result), "%s.%02d", withCommas, cents);
+  else
+    snprintf(result, sizeof(result), "%s", withCommas);
+
+  return strdup(result);
+}
 
 void AddEntry(BillEntry **map, Bill billEntry)
 {
@@ -132,12 +176,18 @@ const char *GetTotalPaymentsByFrequency(BillEntry *map)
       totals[freq] += ConvertBillPaymentFrequency(&bill, freq);
     }
   }
+  int numOfFreqs = 5;
+  const char* totalString[numOfFreqs];
+  for(int i = 0; i < 5; i++)
+  {
+    totalString[i] = GetBillFreq(totals[i]);
+  }
+
 
   snprintf(result, sizeof(result),
-           "Weekly: $%.2f\nFortnightly: $%.2f\nMonthly: $%.2f\nQuarterly: "
-           "$%.2f\nYearly: $%.2f\n",
-           totals[WEEKLY], totals[FORTNIGHTLY], totals[MONTHLY],
-           totals[QUARTERLY], totals[YEARLY]);
+         "Weekly: $%s\nFortnightly: $%s\nMonthly: $%s\nQuarterly: $%s\nYearly: $%s\n",
+         totalString[WEEKLY], totalString[FORTNIGHTLY], totalString[MONTHLY],
+         totalString[QUARTERLY], totalString[YEARLY]);
 
   return result;
 }

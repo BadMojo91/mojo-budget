@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
   }
 
   window = SDL_CreateWindow(
-    "Budget App", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
+    "Mojo Budget", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
     SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
   if (!window)
   {

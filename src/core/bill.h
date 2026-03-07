@@ -49,6 +49,7 @@ extern "C" {
   extern BillEntry* entryMap;
   extern uint64_t _nextID;
 
+  const char* ConvertDoubleToString(double value);
   void AddEntry(BillEntry** map, Bill entry);
   void RemoveEntry(BillEntry** map, uint64_t id);
   void ClearEntries(BillEntry** map);
