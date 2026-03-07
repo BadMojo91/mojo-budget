@@ -16,7 +16,9 @@ void BudgetSave(BillEntry* entryMap, const char* filePath);
 
 void ExportAsTXT(BillEntry* entryMap, const char* filePath);
 void ExportAsCSV(BillEntry* entryMap, const char* filePath);
+void ExportAsTSV(BillEntry* entryMap, const char* filePath);
 
+void ExportAsXLSX(BillEntry* entryMap, const char* filePath);
 
 #ifdef __cplusplus
 }

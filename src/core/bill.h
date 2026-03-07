@@ -55,6 +55,7 @@ extern "C" {
   const char* GetBillFreq(PaymentFrequency frequency);
   double ConvertBillPaymentFrequency(const Bill* bill,
     PaymentFrequency targetFreq);
+  double TotalBillsByFrequency(BillEntry* map, PaymentFrequency freq);
   const char* GetTotalPaymentsByFrequency(BillEntry* map);
   const char* GetEntryMapString(BillEntry* map);
   void PrintEntryMap(BillEntry* map);

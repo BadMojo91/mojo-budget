@@ -19,27 +19,8 @@ Maybe:
 =================
 Bugs:
 =================
-+ [CRITICAL] _nextID declared static in bill.h - each .c file gets its own copy,
-  causing key collisions when loading a file then adding new bills.
-  Fix: declare extern in bill.h, define once in bill.c
-+ [CRITICAL] ExportAsCSV doesn't check if fopen returns NULL - will crash on failure
-  Fix: add NULL guard same as ExportAsTXT
-+ [CRITICAL] igText(fileName) in ui_menubar.c is a format string vulnerability
-  Fix: igText("%s", fileName)
-+ strcpy(budgetName, fileName) in BudgetSave/SaveEntryMap - potential buffer overflow
-  Fix: use snprintf(budgetName, sizeof(budgetName), "%s", fileName)
-+ RemoveEntry shifts keys while iterating the stb_ds map - unsafe, backing array
-  may reallocate mid-loop. Fix: collect keys to shift first, then modify.
-+ GetEntryMapString static buffer (4096 bytes) overflows at ~21 bills
-  Fix: increase buffer size or use dynamic allocation
-+ fread return values not checked in LoadEntryMap / BudgetLoad - corrupt .bud files
-  will silently load garbage or spin in a huge loop
-+ CSV export doesn't escape bill names - commas/quotes/newlines corrupt the output
-  Fix: wrap fields in quotes and escape internal quotes
-+ Duplicate load logic between LoadEntryMap (bill.c) and BudgetLoad (export.c)
-  LoadEntryMap appears unused - consider removing it
 + SDL window title says "Budget App" instead of "Mojo Budget"
-
++ XLSX export doesnt properly export the correct formulae
 =================
 Features:
 =================

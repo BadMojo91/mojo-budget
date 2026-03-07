@@ -96,6 +96,24 @@ double ConvertBillPaymentFrequency(const Bill *bill,
   return annualAmount / targetPeriods;
 }
 
+double TotalBillsByFrequency(BillEntry *map, PaymentFrequency freq)
+{
+  double total = 0.0;
+  int entryCount = hmlen(map);
+
+  for (int i = 0; i < entryCount; i++)
+  {
+    Bill bill = map[i].value;
+    if (!bill.include_in_totals)
+    {
+      continue;
+    }
+    total += ConvertBillPaymentFrequency(&bill, freq);
+  }
+
+  return total;
+}
+
 const char *GetTotalPaymentsByFrequency(BillEntry *map)
 {
   static char result[512];

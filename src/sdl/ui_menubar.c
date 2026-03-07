@@ -82,10 +82,30 @@ void DrawFileMenu(bool *running)
 
         const char *path = tinyfd_saveFileDialog("Export As CSV", "budget.csv",
                                                  1, (const char *[]){"*.csv"},
-                                                 "CSV File (*.csv)");
+                                                 "Comma Separated Values (*.csv)");
 
         if (path)
           ExportAsCSV(entryMap, path);
+      }
+      if (igMenuItem_Bool("TSV File (*.tsv)", NULL, false, true))
+      {
+
+        const char *path = tinyfd_saveFileDialog("Export As TSV", "budget.tsv",
+                                                 1, (const char *[]){"*.tsv"},
+                                                 "Tab Separated Values (*.tsv)");
+
+        if (path)
+          ExportAsTSV(entryMap, path);
+      }
+      if (igMenuItem_Bool("Excel File (*.xlsx)", NULL, false, true))
+      {
+
+        const char *path = tinyfd_saveFileDialog(
+            "Export As XLSX", "budget.xlsx", 1,
+            (const char *[]){"*.xlsx"}, "Excel Spreadsheet (*.xlsx)");
+
+        if (path)
+          ExportAsXLSX(entryMap, path);
       }
       igEndMenu();
     }

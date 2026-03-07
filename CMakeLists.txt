@@ -27,6 +27,13 @@ set(FETCHCONTENT_BASE_DIR ${DEPS_DIR})
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libs" FORCE)
 set(IMGUI_STATIC TRUE CACHE BOOL "Build ImGui as static library" FORCE)
 
+FetchContent_Declare(
+  libxlsx
+  GIT_REPOSITORY https://github.com/jmcnamara/libxlsxwriter.git
+  GIT_TAG v1.2.4
+)
+FetchContent_MakeAvailable(libxlsx)
+
 file(GLOB SRC_NCURSES CONFIGURE_DEPENDS src/ncurses/*.c)
 file(GLOB SRC_SDL CONFIGURE_DEPENDS src/sdl/*.c)
 file(GLOB SRC_FILES CONFIGURE_DEPENDS src/core/*.c)
@@ -45,6 +52,8 @@ if(BUILD_NCURSES)
   if(PANEL_LIBRARY)
     target_link_libraries(mojo-budget-ncurses PRIVATE ${PANEL_LIBRARY})
   endif()
+
+  target_link_libraries(mojo-budget-ncurses PRIVATE xlsxwriter)
 endif()
 
 if(BUILD_SDL)
@@ -86,6 +95,7 @@ if(BUILD_SDL)
       ${cimgui_SOURCE_DIR}/imgui
       ${cimgui_SOURCE_DIR}/imgui/backends
       ${tinyfiledialogs_SOURCE_DIR}
+      ${xlsxwriter_SOURCE_DIR}/include
   )
 
   if(TARGET SDL2::SDL2)
@@ -98,7 +108,7 @@ if(BUILD_SDL)
     target_link_libraries(mojo-budget-sdl PRIVATE ${SDL2_LIBRARIES})
   endif()
 
-  target_link_libraries(mojo-budget-sdl PRIVATE cimgui OpenGL::GL)
+  target_link_libraries(mojo-budget-sdl PRIVATE cimgui OpenGL::GL xlsxwriter)
 endif()
 
 message(STATUS "Configured frontends: ncurses=${BUILD_NCURSES}, sdl=${BUILD_SDL}")
