@@ -1,11 +1,11 @@
 #include "utility.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 // Anything other than zero is an error
 // eg. if(CheckFile(file, filePath, "export") != 0) return;
-int CheckFile(FILE* file, const char* filePath, const char *func)
+int CheckFile(FILE *file, const char *filePath, const char *func)
 {
   if (!file)
   {
@@ -45,6 +45,43 @@ const char *TrimPath(const char *path)
     lastSlash = strrchr(path, '\\');
   }
   return lastSlash ? lastSlash + 1 : path;
+}
+
+const char *TrimExt(const char *fileName)
+{
+  const char *extension = strrchr(fileName, '.');
+
+  if (!extension)
+  {
+    return fileName;
+  }
+
+  size_t nameLen = extension - fileName;
+  static char trimmedName[256];
+  snprintf(trimmedName, sizeof(trimmedName), "%.*s", (int)nameLen, fileName);
+  return trimmedName;
+}
+
+const char* GetExt(const char* fileName){
+    const char* ext = strrchr(fileName, '.');
+     if(!ext)
+      return NULL;
+    return ext;
+}
+
+const char* SetExt(const char* fileName, const char* ext){
+  static char result[4096];
+  const char* dot = strrchr(fileName, '.');
+  size_t baseLen;
+  if(dot)
+  {
+    baseLen = dot - fileName;
+  }
+  else {
+    baseLen = strlen(fileName);
+  }
+  snprintf(result, sizeof(result), "%.*s.%s", (int)baseLen, fileName, ext);
+  return result;
 }
 
 char *ConvertToCurrencyString(double amount)

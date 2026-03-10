@@ -7,12 +7,11 @@
 #include "bill.h"
 #include "utility.h"
 
-
 BillEntry *entryMap = NULL;
 char budgetName[MAX_BUDGET_NAME] = {0};
 uint64_t _nextID = 0;
 
-const char* ConvertDoubleToString(double value)
+const char *ConvertDoubleToString(double value)
 {
   bool showCents = value < 10000.0;
 
@@ -68,14 +67,14 @@ void RemoveEntry(BillEntry **map, uint64_t id)
 {
   hmdel(*map, id);
   int entryCount = hmlen(*map);
-  
-  Bill* bills = NULL;
+
+  Bill *bills = NULL;
   uint64_t *keys = NULL;
   int shiftCount = 0;
 
-  for(int i = 0; i < entryCount; i++)
+  for (int i = 0; i < entryCount; i++)
   {
-    if((*map)[i].key > id)
+    if ((*map)[i].key > id)
     {
       bills = realloc(bills, (shiftCount + 1) * sizeof(Bill));
       keys = realloc(keys, (shiftCount + 1) * sizeof(uint64_t));
@@ -85,7 +84,7 @@ void RemoveEntry(BillEntry **map, uint64_t id)
     }
   }
 
-  for(int i = 0; i < shiftCount; i++)
+  for (int i = 0; i < shiftCount; i++)
   {
     hmdel(*map, keys[i]);
     hmput(*map, keys[i] - 1, bills[i]);
@@ -177,44 +176,42 @@ const char *GetTotalPaymentsByFrequency(BillEntry *map)
     }
   }
   int numOfFreqs = 5;
-  const char* totalString[numOfFreqs];
-  for(int i = 0; i < 5; i++)
+  const char *totalString[numOfFreqs];
+  for (int i = 0; i < 5; i++)
   {
-    totalString[i] = GetBillFreq(totals[i]);
+    totalString[i] = ConvertDoubleToString(totals[i]);
   }
 
-
   snprintf(result, sizeof(result),
-         "Weekly: $%s\nFortnightly: $%s\nMonthly: $%s\nQuarterly: $%s\nYearly: $%s\n",
-         totalString[WEEKLY], totalString[FORTNIGHTLY], totalString[MONTHLY],
-         totalString[QUARTERLY], totalString[YEARLY]);
+           "Weekly: $%s\nFortnightly: $%s\nMonthly: $%s\nQuarterly: "
+           "$%s\nYearly: $%s\n",
+           totalString[WEEKLY], totalString[FORTNIGHTLY], totalString[MONTHLY],
+           totalString[QUARTERLY], totalString[YEARLY]);
 
   return result;
 }
 
 const char *GetEntryMapString(BillEntry *map)
 {
-  static char result[32768]; // 32KB buffer should hold over 200 entries comfortably
+  static char
+      result[32768]; // 32KB buffer should hold over 200 entries comfortably
   int entryCount = hmlen(map);
   char line[256];
-
+  const char *name = TrimExt(budgetName);
+  const char bLine[] = "-------------------------------------------------------"
+                       "-------------------------------------------------------\n";
   size_t offset = 0;
   //  offset += snprintf(result + offset, sizeof(result) - offset, "Found
   //  entries: %d\n\n", entryCount);
-  offset += snprintf(result + offset, sizeof(result) - offset,
-                     "---------------------------------------------------\n");
-  offset += snprintf(result + offset, sizeof(result) - offset,
-                     "-                      BILLS                      -\n");
-  offset += snprintf(result + offset, sizeof(result) - offset,
-                     "---------------------------------------------------\n\n");
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s", bLine);
+  offset += snprintf(result + offset, sizeof(result) - offset, "-                                         %s                                         -\n", name);
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s\n", bLine);
+  offset += snprintf(
+      result + offset, sizeof(result) - offset,
+      "ID | Name               | Frequency      | Amount      | Week      "
+      "  | Fortnight     | Month       | Quarter     | Year        |\n");
   offset +=
-      snprintf(result + offset, sizeof(result) - offset,
-               "ID | Name               | Frequency      | Amount    | Week    "
-               "  | Fortnight   | Month     | Quarter   | Year      |\n");
-  offset +=
-      snprintf(result + offset, sizeof(result) - offset,
-               "---------------------------------------------------------------"
-               "------------------------------------------------\n");
+      snprintf(result + offset, sizeof(result) - offset, "%s", bLine);
 
   for (int i = 0; i < entryCount; i++)
   {
@@ -227,25 +224,31 @@ const char *GetEntryMapString(BillEntry *map)
     q = ConvertBillPaymentFrequency(&bill, QUARTERLY);
     y = ConvertBillPaymentFrequency(&bill, YEARLY);
 
-    snprintf(line, sizeof(line),
-             "%-2lu | %-18s | %-14s | $%8.2f | $%8.2f | $%10.2f | $%8.2f | "
-             "$%8.2f | $%8.2f |\n",
-             id, bill.name, GetBillFreq(bill.frequency), bill.payment, w, f, m,
-             q, y);
+    const char *as = ConvertDoubleToString(bill.payment);
+    const char *ws = ConvertDoubleToString(w);
+    const char *fs = ConvertDoubleToString(f);
+    const char *ms = ConvertDoubleToString(m);
+    const char *qs = ConvertDoubleToString(q);
+    const char *ys = ConvertDoubleToString(y);
+
+    snprintf(
+        line, sizeof(line),
+        "%-2lu | %-18s | %-14s | $%-10s | $%-10s | $%-12s | $%-10s | $%-10s | "
+        "$%-10s |\n",
+        id, bill.name, GetBillFreq(bill.frequency), as, ws, fs, ms, qs, ys);
 
     offset += snprintf(result + offset, sizeof(result) - offset, "%s", line);
   }
 
   offset +=
       snprintf(result + offset, sizeof(result) - offset,
-               "\n\n---------------------------------------------------\n");
+               "\n\n%s", bLine);
   offset += snprintf(result + offset, sizeof(result) - offset, "%s",
                      GetTotalPaymentsByFrequency(map));
   offset += snprintf(result + offset, sizeof(result) - offset,
-                     "---------------------------------------------------\n\n");
+                     "%s\n", bLine);
 
   return result;
 }
 
 void PrintEntryMap(BillEntry *map) { printf("%s", GetEntryMapString(map)); }
-

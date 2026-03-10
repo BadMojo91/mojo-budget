@@ -10,6 +10,9 @@ extern "C" {
 int CheckFile(FILE* file, const char* filePath, const char *func);
 const char* TrimHomePath(const char* path);
 const char* TrimPath(const char* path);
+const char* TrimExt(const char* fileName);
+const char* GetExt(const char* fileName);
+const char* SetExt(const char* fileName, const char* ext);
 char* ConvertToCurrencyString(double amount);
 
 #ifdef __cplusplus
