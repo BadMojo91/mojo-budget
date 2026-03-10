@@ -47,7 +47,9 @@ extern "C" {
   typedef enum { FILETYPE_TXT, FILETYPE_BUD } SaveFileType;
   extern char budgetName[MAX_BUDGET_NAME];
   extern BillEntry* entryMap;
+  extern IncomeEntry* incomeMap;
   extern uint64_t _nextID;
+  extern uint64_t _nextIncomeID;
 
   const char* ConvertDoubleToString(double value);
   void AddEntry(BillEntry** map, Bill entry);

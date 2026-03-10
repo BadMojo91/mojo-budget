@@ -42,11 +42,11 @@ void DrawFileMenu(bool *running)
                                                  "Budget File (*.bud)");
 
         if (path)
-          BudgetSave(entryMap, path);
+          BudgetSave(entryMap, incomeMap, path);
       }
       else
       {
-        BudgetSave(entryMap, savePath);
+        BudgetSave(entryMap, incomeMap, savePath);
       }
     }
     if (igMenuItem_Bool("Save As", NULL, false, true))
@@ -56,7 +56,7 @@ void DrawFileMenu(bool *running)
                                                "Budget File (*.bud)");
 
       if (path)
-        BudgetSave(entryMap, path);
+        BudgetSave(entryMap, incomeMap, path);
     }
     if (igBeginMenu("Recent files", true))
     {
@@ -122,7 +122,7 @@ void DrawFileMenu(bool *running)
         char path[1024];
         snprintf(path, sizeof(path), "%s/default.bud", GetConfigDir());
 
-        BudgetSave(entryMap, path);
+        BudgetSave(entryMap, incomeMap, path);
         printf("Saved default budget: %s", path);
       }
       if(igMenuItem_Bool("Reset Default Configuration", NULL, false, true)){

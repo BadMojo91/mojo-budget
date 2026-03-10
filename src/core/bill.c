@@ -8,8 +8,10 @@
 #include "utility.h"
 
 BillEntry *entryMap = NULL;
+IncomeEntry *incomeMap = NULL;
 char budgetName[MAX_BUDGET_NAME] = {0};
 uint64_t _nextID = 0;
+uint64_t _nextIncomeID = 0;
 
 const char *ConvertDoubleToString(double value)
 {
