@@ -385,7 +385,7 @@ static void SetupBillsTableColumns()
                      ImGuiTableColumnFlags_WidthFixed |
                          ImGuiTableColumnFlags_NoResize |
                          ImGuiTableColumnFlags_NoHide,
-                     210, 0);
+                     285, 0);
   igTableHeadersRow();
 }
 
@@ -582,6 +582,51 @@ static void DrawBillActions(BillEntry *entry, bool *removeRequested,
     }
     igEndPopup();
   }
+
+  igSameLine(0.0f, spacing);
+
+  igColorEdit3("##bc", bill->color,
+               ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs |
+               ImGuiColorEditFlags_NoBorder);
+
+  igSameLine(0.0f, spacing);
+
+  if (igSmallButton("~"))
+  {
+    bill->color[0] = (float)rand() / (float)RAND_MAX;
+    bill->color[1] = (float)rand() / (float)RAND_MAX;
+    bill->color[2] = (float)rand() / (float)RAND_MAX;
+  }
+
+  static float s_colorClipboard[3] = {0};
+  static bool  s_colorClipboardSet  = false;
+
+  igSameLine(0.0f, spacing);
+
+  if (igSmallButton("C"))
+  {
+    s_colorClipboard[0] = bill->color[0];
+    s_colorClipboard[1] = bill->color[1];
+    s_colorClipboard[2] = bill->color[2];
+    s_colorClipboardSet = true;
+  }
+  if (igIsItemHovered(ImGuiHoveredFlags_None))
+    igSetTooltip("Copy color");
+
+  igSameLine(0.0f, spacing);
+
+  if (!s_colorClipboardSet)
+    igBeginDisabled(true);
+  if (igSmallButton("P"))
+  {
+    bill->color[0] = s_colorClipboard[0];
+    bill->color[1] = s_colorClipboard[1];
+    bill->color[2] = s_colorClipboard[2];
+  }
+  if (!s_colorClipboardSet)
+    igEndDisabled();
+  if (igIsItemHovered(ImGuiHoveredFlags_None))
+    igSetTooltip(s_colorClipboardSet ? "Paste color" : "No color copied yet");
 
   igSameLine(0.0f, spacing);
 
@@ -820,8 +865,9 @@ static void DrawYearCalendar(BillEntry *map)
   if (igSmallButton(">")) g_calYear++;
 
   int calData[12][31];
+  float calColors[12][31][3];
   memset(calData, 0, sizeof(calData));
-  BuildYearCalendar(map, g_calYear, calData);
+  BuildYearCalendar(map, g_calYear, calData, calColors);
 
   if (!igBeginTable("CalGrid", 3,
                     ImGuiTableFlags_SizingStretchSame,
@@ -894,8 +940,12 @@ static void DrawYearCalendar(BillEntry *map)
         bool hasBill = calData[m][day - 1] > 0;
         if (hasBill)
         {
-          ImVec4 yellow = {1.0f, 0.8f, 0.2f, 1.0f};
-          igPushStyleColor_Vec4(ImGuiCol_Text, yellow);
+          float *c = calColors[m][day - 1];
+          ImVec4 col = {c[0], c[1], c[2], 1.0f};
+          // fallback to yellow if color is unset
+          if (col.x == 0.0f && col.y == 0.0f && col.z == 0.0f)
+            col = (ImVec4){1.0f, 0.8f, 0.2f, 1.0f};
+          igPushStyleColor_Vec4(ImGuiCol_Text, col);
         }
         igText("%d", day);
         if (hasBill)

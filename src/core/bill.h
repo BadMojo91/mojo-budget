@@ -34,6 +34,7 @@ extern "C" {
     int last_date_day;   // 1-31, 0 = not set
     int last_date_month; // 1-12
     int last_date_year;
+    float color[3];      // RGB calendar highlight color
   } Bill;
 
   typedef struct {
@@ -78,7 +79,8 @@ extern "C" {
   BillDate AddMonths(BillDate d, int n);
   BillDate AddYears(BillDate d, int n);
   BillDate CalcNextBillDate(const Bill *bill);
-  void BuildYearCalendar(BillEntry *map, int year, int out[12][31]);
+  void BuildYearCalendar(BillEntry *map, int year, int out[12][31],
+                         float outColors[12][31][3]);
   void AddEntry(BillEntry** map, Bill entry);
   void RemoveEntry(BillEntry** map, uint64_t id);
   void ClearEntries(BillEntry** map);

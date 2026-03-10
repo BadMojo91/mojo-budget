@@ -139,11 +139,17 @@ BillDate CalcNextBillDate(const Bill *bill)
   return AdvanceBillDate(bill, d);
 }
 
-void BuildYearCalendar(BillEntry *map, int year, int out[12][31])
+void BuildYearCalendar(BillEntry *map, int year, int out[12][31],
+                       float outColors[12][31][3])
 {
   for (int m = 0; m < 12; m++)
     for (int d = 0; d < 31; d++)
+    {
       out[m][d] = 0;
+      outColors[m][d][0] = 0.0f;
+      outColors[m][d][1] = 0.0f;
+      outColors[m][d][2] = 0.0f;
+    }
 
   int count = hmlen(map);
   for (int i = 0; i < count; i++)
@@ -177,7 +183,16 @@ void BuildYearCalendar(BillEntry *map, int year, int out[12][31])
     // Collect all occurrences within target year
     while (cur.year == year)
     {
-      out[cur.month - 1][cur.day - 1]++;
+      int m = cur.month - 1;
+      int d = cur.day - 1;
+      if (out[m][d] == 0)
+      {
+        // First bill on this day — store its color
+        outColors[m][d][0] = bill->color[0];
+        outColors[m][d][1] = bill->color[1];
+        outColors[m][d][2] = bill->color[2];
+      }
+      out[m][d]++;
       cur = AdvanceBillDate(bill, cur);
     }
   }
@@ -187,6 +202,13 @@ void AddEntry(BillEntry **map, Bill billEntry)
 {
   billEntry.include_in_totals = true;
   billEntry.locked = false;
+  // Default calendar highlight color: yellow
+  if (billEntry.color[0] == 0.0f && billEntry.color[1] == 0.0f && billEntry.color[2] == 0.0f)
+  {
+    billEntry.color[0] = 1.0f;
+    billEntry.color[1] = 0.8f;
+    billEntry.color[2] = 0.2f;
+  }
   uint64_t newID = _nextID++;
   hmput(*map, newID, billEntry);
   printf("Adding bill entry: %s\nID: %lu\n", billEntry.name, newID);

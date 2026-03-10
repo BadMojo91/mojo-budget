@@ -8,9 +8,9 @@
 #include <string.h>
 
 #define BUD_MAGIC {0x1B, 'B', 'U', 'D'}
-#define BUD_VERSION 2
+#define BUD_VERSION 3
 
-// v1 Bill struct layout (no last_date fields) — used for backward-compat loading
+// v1 Bill struct layout (no last_date or color fields)
 typedef struct
 {
   char name[MAX_BILL_NAME];
@@ -19,6 +19,19 @@ typedef struct
   bool include_in_totals;
   bool locked;
 } BillV1;
+
+// v2 Bill struct layout (has last_date, no color)
+typedef struct
+{
+  char name[MAX_BILL_NAME];
+  PaymentFrequency frequency;
+  double payment;
+  bool include_in_totals;
+  bool locked;
+  int last_date_day;
+  int last_date_month;
+  int last_date_year;
+} BillV2;
 
 typedef struct
 {
@@ -76,7 +89,7 @@ BillEntry *BudgetLoad(const char *filePath)
       return NULL;
     }
 
-    if (header.version == 2)
+    if (header.version == 3)
     {
       if (fread(budgetName, sizeof(budgetName), 1, file) != 1)
       {
@@ -85,7 +98,7 @@ BillEntry *BudgetLoad(const char *filePath)
         return NULL;
       }
 
-      printf("Loading budget (v2): %s\n", trimmedPath);
+      printf("Loading budget (v3): %s\n", trimmedPath);
 
       int billCount;
       if (fread(&billCount, sizeof(int), 1, file) != 1 || billCount < 0)
@@ -108,6 +121,84 @@ BillEntry *BudgetLoad(const char *filePath)
           fclose(file);
           return NULL;
         }
+        hmput(map, key, bill);
+        _nextID++;
+      }
+      _nextID++;
+
+      int incomeCount;
+      if (fread(&incomeCount, sizeof(int), 1, file) != 1 || incomeCount < 0)
+      {
+        fprintf(stderr, "Error: failed to read income count from '%s'\n", filePath);
+        hmfree(map);
+        fclose(file);
+        return NULL;
+      }
+
+      for (int i = 0; i < incomeCount; i++)
+      {
+        uint64_t key;
+        Income income;
+        if (fread(&key, sizeof(uint64_t), 1, file) != 1 ||
+            fread(&income, sizeof(Income), 1, file) != 1)
+        {
+          fprintf(stderr, "Error: unexpected EOF reading income %d from '%s'\n", i, filePath);
+          hmfree(map);
+          fclose(file);
+          return NULL;
+        }
+        hmput(incomeMap, key, income);
+        _nextIncomeID++;
+      }
+      _nextIncomeID++;
+
+      printf("Loaded %d bills, %d incomes.\n", billCount, incomeCount);
+      fclose(file);
+      return map;
+    }
+    else if (header.version == 2)
+    {
+      if (fread(budgetName, sizeof(budgetName), 1, file) != 1)
+      {
+        fprintf(stderr, "Error: failed to read budget name from '%s'\n", filePath);
+        fclose(file);
+        return NULL;
+      }
+
+      printf("Loading budget (v2): %s\n", trimmedPath);
+
+      int billCount;
+      if (fread(&billCount, sizeof(int), 1, file) != 1 || billCount < 0)
+      {
+        fprintf(stderr, "Error: failed to read bill count from '%s'\n", filePath);
+        fclose(file);
+        return NULL;
+      }
+
+      BillEntry *map = NULL;
+      for (int i = 0; i < billCount; i++)
+      {
+        uint64_t key;
+        BillV2 v2bill;
+        if (fread(&key, sizeof(uint64_t), 1, file) != 1 ||
+            fread(&v2bill, sizeof(BillV2), 1, file) != 1)
+        {
+          fprintf(stderr, "Error: unexpected EOF reading bill %d from '%s'\n", i, filePath);
+          hmfree(map);
+          fclose(file);
+          return NULL;
+        }
+        Bill bill;
+        memset(&bill, 0, sizeof(Bill));
+        memcpy(bill.name, v2bill.name, sizeof(v2bill.name));
+        bill.frequency        = v2bill.frequency;
+        bill.payment          = v2bill.payment;
+        bill.include_in_totals = v2bill.include_in_totals;
+        bill.locked           = v2bill.locked;
+        bill.last_date_day    = v2bill.last_date_day;
+        bill.last_date_month  = v2bill.last_date_month;
+        bill.last_date_year   = v2bill.last_date_year;
+        bill.color[0] = 1.0f; bill.color[1] = 0.8f; bill.color[2] = 0.2f;
         hmput(map, key, bill);
         _nextID++;
       }
@@ -182,7 +273,8 @@ BillEntry *BudgetLoad(const char *filePath)
         bill.payment = v1bill.payment;
         bill.include_in_totals = v1bill.include_in_totals;
         bill.locked = v1bill.locked;
-        // last_date_day/month/year remain 0 (not set)
+        // last_date remains 0 (not set); set default yellow color
+        bill.color[0] = 1.0f; bill.color[1] = 0.8f; bill.color[2] = 0.2f;
         hmput(map, key, bill);
         _nextID++;
       }
@@ -266,6 +358,7 @@ BillEntry *BudgetLoad(const char *filePath)
       bill.payment = v1bill.payment;
       bill.include_in_totals = v1bill.include_in_totals;
       bill.locked = v1bill.locked;
+      bill.color[0] = 1.0f; bill.color[1] = 0.8f; bill.color[2] = 0.2f;
       hmput(map, key, bill);
       _nextID++;
     }
