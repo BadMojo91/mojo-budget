@@ -147,7 +147,7 @@ void DrawAboutMenu()
   if (igBeginMenu("About", true))
   {
     igText("Mojo Budget");
-    igText("Version 1.1.0");
+    igText("Version 2.0.0");
     igText("A simple budgeting application.");
     igText("By Ian \"BadMojo\" Vine");
     igEndMenu();
