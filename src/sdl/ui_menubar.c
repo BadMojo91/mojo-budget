@@ -18,6 +18,7 @@ void DrawFileMenu(bool *running)
     if (igMenuItem_Bool("New", NULL, false, true))
     {
       ClearEntries(&entryMap);
+      ClearIncomeEntries(&incomeMap);
     }
     if (igMenuItem_Bool("Open", NULL, false, true))
     {

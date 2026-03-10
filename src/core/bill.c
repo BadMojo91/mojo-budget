@@ -104,6 +104,92 @@ void ClearEntries(BillEntry **map)
   _nextID = 0;
 }
 
+void AddIncomeEntry(IncomeEntry **map, Income entry)
+{
+  entry.enable = true;
+  uint64_t newID = _nextIncomeID++;
+  hmput(*map, newID, entry);
+  printf("Adding income entry: %s\nID: %lu\n", entry.name, newID);
+}
+
+void RemoveIncomeEntry(IncomeEntry **map, uint64_t id)
+{
+  hmdel(*map, id);
+  int entryCount = hmlen(*map);
+
+  Income *incomes = NULL;
+  uint64_t *keys = NULL;
+  int shiftCount = 0;
+
+  for (int i = 0; i < entryCount; i++)
+  {
+    if ((*map)[i].key > id)
+    {
+      incomes = realloc(incomes, (shiftCount + 1) * sizeof(Income));
+      keys = realloc(keys, (shiftCount + 1) * sizeof(uint64_t));
+      incomes[shiftCount] = (*map)[i].value;
+      keys[shiftCount] = (*map)[i].key;
+      shiftCount++;
+    }
+  }
+
+  for (int i = 0; i < shiftCount; i++)
+  {
+    hmdel(*map, keys[i]);
+    hmput(*map, keys[i] - 1, incomes[i]);
+  }
+
+  free(incomes);
+  free(keys);
+
+  _nextIncomeID = (hmlen(map) == 0) ? 0 : _nextIncomeID - 1;
+}
+
+void ClearIncomeEntries(IncomeEntry **map)
+{
+  hmfree(*map);
+  _nextIncomeID = 0;
+}
+
+double GetIncomeAtFrequency(const Income *income, IncomeFrequency targetFreq)
+{
+  static const double periodsPerYear[] = {
+      52.0, // INCOME_WEEKLY
+      26.0, // INCOME_FORTNIGHTLY
+      12.0, // INCOME_MONTHLY
+      0.0,  // INCOME_ALTERNATING_WEEKLY (handled separately)
+  };
+
+  double annualAmount;
+  if (income->frequency == INCOME_ALTERNATING_WEEKLY)
+  {
+    annualAmount = ((income->amount + income->amount_alt) / 2.0) * 52.0;
+  }
+  else
+  {
+    annualAmount = income->amount * periodsPerYear[income->frequency];
+  }
+
+  return annualAmount / periodsPerYear[targetFreq];
+}
+
+const char *GetIncomeFreqName(IncomeFrequency frequency)
+{
+  switch (frequency)
+  {
+  case INCOME_WEEKLY:
+    return "Weekly";
+  case INCOME_FORTNIGHTLY:
+    return "Fortnightly";
+  case INCOME_MONTHLY:
+    return "Monthly";
+  case INCOME_ALTERNATING_WEEKLY:
+    return "Alternating Weekly";
+  default:
+    return "Error!";
+  }
+}
+
 const char *GetBillFreq(PaymentFrequency frequency)
 {
   switch (frequency)
@@ -162,69 +248,256 @@ double TotalBillsByFrequency(BillEntry *map, PaymentFrequency freq)
 const char *GetTotalPaymentsByFrequency(BillEntry *map)
 {
   static char result[512];
-  double totals[5] = {0}; // WEEKLY, FORTNIGHTLY, MONTHLY, QUARTERLY, YEARLY
+  static const char eBorder[] = "==================================\n";
+  static const char *freqNames[] = {
+      "Weekly", "Fortnightly", "Monthly", "Quarterly", "Yearly"};
+  double totals[5] = {0};
   int entryCount = hmlen(map);
+  size_t offset = 0;
 
   for (int i = 0; i < entryCount; i++)
   {
     Bill bill = map[i].value;
     if (!bill.include_in_totals)
-    {
       continue;
-    }
     for (int freq = WEEKLY; freq <= YEARLY; freq++)
-    {
-      totals[freq] += ConvertBillPaymentFrequency(&bill, freq);
-    }
+      totals[freq] += ConvertBillPaymentFrequency(&bill, (PaymentFrequency)freq);
   }
-  int numOfFreqs = 5;
-  const char *totalString[numOfFreqs];
+
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s", eBorder);
+  offset += snprintf(result + offset, sizeof(result) - offset,
+                     "| %-13s | %-14s |\n", "Frequency", "Expenses");
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s", eBorder);
+
   for (int i = 0; i < 5; i++)
   {
-    totalString[i] = ConvertDoubleToString(totals[i]);
+    const char *expStr = ConvertDoubleToString(totals[i]);
+    char expBuf[20];
+    snprintf(expBuf, sizeof(expBuf), "$%s", expStr);
+    offset += snprintf(result + offset, sizeof(result) - offset,
+                       "| %-13s | %-14s |\n", freqNames[i], expBuf);
+    free((void *)expStr);
   }
 
-  snprintf(result, sizeof(result),
-           "Weekly: $%s\nFortnightly: $%s\nMonthly: $%s\nQuarterly: "
-           "$%s\nYearly: $%s\n",
-           totalString[WEEKLY], totalString[FORTNIGHTLY], totalString[MONTHLY],
-           totalString[QUARTERLY], totalString[YEARLY]);
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s", eBorder);
+  return result;
+}
 
+const char *GetIncomeMapString(IncomeEntry *map)
+{
+  static char result[16384];
+  static const char wBorder[] =
+      "==========================================================================="
+      "===========================================================================\n";
+  int entryCount = hmlen(map);
+  size_t offset = 0;
+
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s", wBorder);
+  offset += snprintf(result + offset, sizeof(result) - offset,
+                     "| %-20s | %-18s | %-26s | %-12s | %-13s | %-12s | %-12s | %-12s |\n",
+                     "Name", "Frequency", "Amount",
+                     "Weekly", "Fortnightly", "Monthly", "Quarterly", "Yearly");
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s", wBorder);
+
+  for (int i = 0; i < entryCount; i++)
+  {
+    Income income = map[i].value;
+
+    double w = GetIncomeAtFrequency(&income, INCOME_WEEKLY);
+    double f = GetIncomeAtFrequency(&income, INCOME_FORTNIGHTLY);
+    double m = GetIncomeAtFrequency(&income, INCOME_MONTHLY);
+    double q = w * 13.0;
+    double y = w * 52.0;
+
+    const char *ws = ConvertDoubleToString(w);
+    const char *fs = ConvertDoubleToString(f);
+    const char *ms = ConvertDoubleToString(m);
+    const char *qs = ConvertDoubleToString(q);
+    const char *ys = ConvertDoubleToString(y);
+
+    char amountBuf[32];
+    if (income.frequency == INCOME_ALTERNATING_WEEKLY)
+    {
+      const char *a1 = ConvertDoubleToString(income.amount);
+      const char *a2 = ConvertDoubleToString(income.amount_alt);
+      snprintf(amountBuf, sizeof(amountBuf), "W1:$%-10s W2:$%-7s", a1, a2);
+      free((void *)a1);
+      free((void *)a2);
+    }
+    else
+    {
+      const char *as = ConvertDoubleToString(income.amount);
+      snprintf(amountBuf, sizeof(amountBuf), "$%-25s", as);
+      free((void *)as);
+    }
+
+    char rowName[32];
+    if (!income.enable)
+      snprintf(rowName, sizeof(rowName), "%-18s *", income.name);
+    else
+      snprintf(rowName, sizeof(rowName), "%s", income.name);
+
+    char wBuf[16], fBuf[16], mBuf[16], qBuf[16], yBuf[16];
+    snprintf(wBuf, sizeof(wBuf), "$%s", ws);
+    snprintf(fBuf, sizeof(fBuf), "$%s", fs);
+    snprintf(mBuf, sizeof(mBuf), "$%s", ms);
+    snprintf(qBuf, sizeof(qBuf), "$%s", qs);
+    snprintf(yBuf, sizeof(yBuf), "$%s", ys);
+
+    offset += snprintf(result + offset, sizeof(result) - offset,
+                       "| %-20s | %-18s | %-26s | %-12s | %-13s | %-12s | %-12s | %-12s |\n",
+                       rowName, GetIncomeFreqName(income.frequency), amountBuf,
+                       wBuf, fBuf, mBuf, qBuf, yBuf);
+
+    free((void *)ws);
+    free((void *)fs);
+    free((void *)ms);
+    free((void *)qs);
+    free((void *)ys);
+  }
+
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s", wBorder);
   return result;
 }
 
 const char *GetEntryMapString(BillEntry *map)
 {
-  static char
-      result[32768]; // 32KB buffer should hold over 200 entries comfortably
-  int entryCount = hmlen(map);
-  char line[256];
-  const char *name = TrimExt(budgetName);
-  const char bLine[] = "-------------------------------------------------------"
-                       "-------------------------------------------------------\n";
-  size_t offset = 0;
-  //  offset += snprintf(result + offset, sizeof(result) - offset, "Found
-  //  entries: %d\n\n", entryCount);
-  offset += snprintf(result + offset, sizeof(result) - offset, "%s", bLine);
-  offset += snprintf(result + offset, sizeof(result) - offset, "-                                         %s                                         -\n", name);
-  offset += snprintf(result + offset, sizeof(result) - offset, "%s\n", bLine);
-  offset += snprintf(
-      result + offset, sizeof(result) - offset,
-      "ID | Name               | Frequency      | Amount      | Week      "
-      "  | Fortnight     | Month       | Quarter     | Year        |\n");
-  offset +=
-      snprintf(result + offset, sizeof(result) - offset, "%s", bLine);
+  static char result[65536];
+  static const char wBorder[] =
+      "==========================================================================="
+      "===========================================================================\n";
+  static const char nBorder[] =
+      "====================================================================\n";
+  static const char *freqNames[] = {
+      "Weekly", "Fortnightly", "Monthly", "Quarterly", "Yearly"};
 
-  for (int i = 0; i < entryCount; i++)
+  int billCount = hmlen(map);
+  int incomeCount = hmlen(incomeMap);
+  const char *name = TrimExt(budgetName);
+  size_t offset = 0;
+
+  double incomeTotals[5] = {0};
+  double billTotals[5] = {0};
+
+  // Title block
+  {
+    int nameLen = (int)strlen(name);
+    int innerWidth = 146;
+    int leftPad = (innerWidth - nameLen) / 2;
+    int rightPad = innerWidth - nameLen - leftPad;
+    offset += snprintf(result + offset, sizeof(result) - offset, "%s", wBorder);
+    offset += snprintf(result + offset, sizeof(result) - offset,
+                       "| %*s%s%*s |\n", leftPad, "", name, rightPad, "");
+    offset += snprintf(result + offset, sizeof(result) - offset, "%s\n", wBorder);
+  }
+
+  // Income section (only if there are any incomes)
+  if (incomeCount > 0)
+  {
+    offset += snprintf(result + offset, sizeof(result) - offset, "Income\n");
+    offset += snprintf(result + offset, sizeof(result) - offset, "%s", wBorder);
+    offset += snprintf(result + offset, sizeof(result) - offset,
+                       "| %-20s | %-18s | %-26s | %-12s | %-13s | %-12s | %-12s | %-12s |\n",
+                       "Name", "Frequency", "Amount",
+                       "Weekly", "Fortnightly", "Monthly", "Quarterly", "Yearly");
+    offset += snprintf(result + offset, sizeof(result) - offset, "%s", wBorder);
+
+    for (int i = 0; i < incomeCount; i++)
+    {
+      Income income = incomeMap[i].value;
+
+      double w = GetIncomeAtFrequency(&income, INCOME_WEEKLY);
+      double f = GetIncomeAtFrequency(&income, INCOME_FORTNIGHTLY);
+      double m = GetIncomeAtFrequency(&income, INCOME_MONTHLY);
+      double q = w * 13.0;
+      double y = w * 52.0;
+
+      if (income.enable)
+      {
+        incomeTotals[0] += w;
+        incomeTotals[1] += f;
+        incomeTotals[2] += m;
+        incomeTotals[3] += q;
+        incomeTotals[4] += y;
+      }
+
+      const char *ws = ConvertDoubleToString(w);
+      const char *fs = ConvertDoubleToString(f);
+      const char *ms = ConvertDoubleToString(m);
+      const char *qs = ConvertDoubleToString(q);
+      const char *ys = ConvertDoubleToString(y);
+
+      char amountBuf[32];
+      if (income.frequency == INCOME_ALTERNATING_WEEKLY)
+      {
+        const char *a1 = ConvertDoubleToString(income.amount);
+        const char *a2 = ConvertDoubleToString(income.amount_alt);
+        snprintf(amountBuf, sizeof(amountBuf), "W1:$%-10s W2:$%-7s", a1, a2);
+        free((void *)a1);
+        free((void *)a2);
+      }
+      else
+      {
+        const char *as = ConvertDoubleToString(income.amount);
+        snprintf(amountBuf, sizeof(amountBuf), "$%-25s", as);
+        free((void *)as);
+      }
+
+      char rowName[32];
+      if (!income.enable)
+        snprintf(rowName, sizeof(rowName), "%-18s *", income.name);
+      else
+        snprintf(rowName, sizeof(rowName), "%s", income.name);
+
+      char wBuf[16], fBuf[16], mBuf[16], qBuf[16], yBuf[16];
+      snprintf(wBuf, sizeof(wBuf), "$%s", ws);
+      snprintf(fBuf, sizeof(fBuf), "$%s", fs);
+      snprintf(mBuf, sizeof(mBuf), "$%s", ms);
+      snprintf(qBuf, sizeof(qBuf), "$%s", qs);
+      snprintf(yBuf, sizeof(yBuf), "$%s", ys);
+
+      offset += snprintf(result + offset, sizeof(result) - offset,
+                         "| %-20s | %-18s | %-26s | %-12s | %-13s | %-12s | %-12s | %-12s |\n",
+                         rowName, GetIncomeFreqName(income.frequency), amountBuf,
+                         wBuf, fBuf, mBuf, qBuf, yBuf);
+
+      free((void *)ws);
+      free((void *)fs);
+      free((void *)ms);
+      free((void *)qs);
+      free((void *)ys);
+    }
+
+    offset += snprintf(result + offset, sizeof(result) - offset, "%s\n", wBorder);
+  }
+
+  // Expenses section
+  offset += snprintf(result + offset, sizeof(result) - offset, "Expenses\n");
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s", wBorder);
+  offset += snprintf(result + offset, sizeof(result) - offset,
+                     "| %-20s | %-18s | %-26s | %-12s | %-13s | %-12s | %-12s | %-12s |\n",
+                     "Name", "Frequency", "Amount",
+                     "Weekly", "Fortnightly", "Monthly", "Quarterly", "Yearly");
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s", wBorder);
+
+  for (int i = 0; i < billCount; i++)
   {
     Bill bill = map[i].value;
-    uint64_t id = map[i].key;
-    double w, f, m, q, y;
-    w = ConvertBillPaymentFrequency(&bill, WEEKLY);
-    f = ConvertBillPaymentFrequency(&bill, FORTNIGHTLY);
-    m = ConvertBillPaymentFrequency(&bill, MONTHLY);
-    q = ConvertBillPaymentFrequency(&bill, QUARTERLY);
-    y = ConvertBillPaymentFrequency(&bill, YEARLY);
+
+    double w = ConvertBillPaymentFrequency(&bill, WEEKLY);
+    double f = ConvertBillPaymentFrequency(&bill, FORTNIGHTLY);
+    double m = ConvertBillPaymentFrequency(&bill, MONTHLY);
+    double q = ConvertBillPaymentFrequency(&bill, QUARTERLY);
+    double y = ConvertBillPaymentFrequency(&bill, YEARLY);
+
+    if (bill.include_in_totals)
+    {
+      billTotals[0] += w;
+      billTotals[1] += f;
+      billTotals[2] += m;
+      billTotals[3] += q;
+      billTotals[4] += y;
+    }
 
     const char *as = ConvertDoubleToString(bill.payment);
     const char *ws = ConvertDoubleToString(w);
@@ -233,22 +506,71 @@ const char *GetEntryMapString(BillEntry *map)
     const char *qs = ConvertDoubleToString(q);
     const char *ys = ConvertDoubleToString(y);
 
-    snprintf(
-        line, sizeof(line),
-        "%-2lu | %-18s | %-14s | $%-10s | $%-10s | $%-12s | $%-10s | $%-10s | "
-        "$%-10s |\n",
-        id, bill.name, GetBillFreq(bill.frequency), as, ws, fs, ms, qs, ys);
+    char amountBuf[32];
+    snprintf(amountBuf, sizeof(amountBuf), "$%-25s", as);
 
-    offset += snprintf(result + offset, sizeof(result) - offset, "%s", line);
+    char rowName[32];
+    if (!bill.include_in_totals)
+      snprintf(rowName, sizeof(rowName), "%-18s *", bill.name);
+    else
+      snprintf(rowName, sizeof(rowName), "%s", bill.name);
+
+    char wBuf[16], fBuf[16], mBuf[16], qBuf[16], yBuf[16];
+    snprintf(wBuf, sizeof(wBuf), "$%s", ws);
+    snprintf(fBuf, sizeof(fBuf), "$%s", fs);
+    snprintf(mBuf, sizeof(mBuf), "$%s", ms);
+    snprintf(qBuf, sizeof(qBuf), "$%s", qs);
+    snprintf(yBuf, sizeof(yBuf), "$%s", ys);
+
+    offset += snprintf(result + offset, sizeof(result) - offset,
+                       "| %-20s | %-18s | %-26s | %-12s | %-13s | %-12s | %-12s | %-12s |\n",
+                       rowName, GetBillFreq(bill.frequency), amountBuf,
+                       wBuf, fBuf, mBuf, qBuf, yBuf);
+
+    free((void *)as);
+    free((void *)ws);
+    free((void *)fs);
+    free((void *)ms);
+    free((void *)qs);
+    free((void *)ys);
   }
 
-  offset +=
-      snprintf(result + offset, sizeof(result) - offset,
-               "\n\n%s", bLine);
-  offset += snprintf(result + offset, sizeof(result) - offset, "%s",
-                     GetTotalPaymentsByFrequency(map));
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s\n", wBorder);
+
+  // Totals section
+  offset += snprintf(result + offset, sizeof(result) - offset, "Total\n");
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s", nBorder);
   offset += snprintf(result + offset, sizeof(result) - offset,
-                     "%s\n", bLine);
+                     "| %-13s | %-14s | %-14s | %-14s |\n",
+                     "Frequency", "Income", "Expenses", "Net");
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s", nBorder);
+
+  for (int i = 0; i < 5; i++)
+  {
+    double net = incomeTotals[i] - billTotals[i];
+    const char *incStr = ConvertDoubleToString(incomeTotals[i]);
+    const char *expStr = ConvertDoubleToString(billTotals[i]);
+    double absNet = net < 0.0 ? -net : net;
+    const char *netStr = ConvertDoubleToString(absNet);
+
+    char incBuf[20], expBuf[20], netBuf[24];
+    snprintf(incBuf, sizeof(incBuf), "$%s", incStr);
+    snprintf(expBuf, sizeof(expBuf), "$%s", expStr);
+    if (net < 0.0)
+      snprintf(netBuf, sizeof(netBuf), "-$%s", netStr);
+    else
+      snprintf(netBuf, sizeof(netBuf), "$%s", netStr);
+
+    offset += snprintf(result + offset, sizeof(result) - offset,
+                       "| %-13s | %-14s | %-14s | %-14s |\n",
+                       freqNames[i], incBuf, expBuf, netBuf);
+
+    free((void *)incStr);
+    free((void *)expStr);
+    free((void *)netStr);
+  }
+
+  offset += snprintf(result + offset, sizeof(result) - offset, "%s", nBorder);
 
   return result;
 }

@@ -32,16 +32,26 @@ extern "C" {
     Bill value;
   } BillEntry;
  
+  typedef enum {
+    INCOME_WEEKLY,
+    INCOME_FORTNIGHTLY,
+    INCOME_MONTHLY,
+    INCOME_ALTERNATING_WEEKLY,
+  } IncomeFrequency;
+
   typedef struct {
     char name[64];
-    double income;
+    IncomeFrequency frequency;
+    double amount;
+    double amount_alt; // week-2 value, only used for INCOME_ALTERNATING_WEEKLY
     bool enable;
+    bool locked;
   } Income;
 
   typedef struct {
     uint64_t key;
     Income value;
-  } IncomeEntry; 
+  } IncomeEntry;
   
 
   typedef enum { FILETYPE_TXT, FILETYPE_BUD } SaveFileType;
@@ -55,11 +65,17 @@ extern "C" {
   void AddEntry(BillEntry** map, Bill entry);
   void RemoveEntry(BillEntry** map, uint64_t id);
   void ClearEntries(BillEntry** map);
+  void AddIncomeEntry(IncomeEntry** map, Income entry);
+  void RemoveIncomeEntry(IncomeEntry** map, uint64_t id);
+  void ClearIncomeEntries(IncomeEntry** map);
+  double GetIncomeAtFrequency(const Income* income, IncomeFrequency targetFreq);
+  const char* GetIncomeFreqName(IncomeFrequency frequency);
   const char* GetBillFreq(PaymentFrequency frequency);
   double ConvertBillPaymentFrequency(const Bill* bill,
     PaymentFrequency targetFreq);
   double TotalBillsByFrequency(BillEntry* map, PaymentFrequency freq);
   const char* GetTotalPaymentsByFrequency(BillEntry* map);
+  const char* GetIncomeMapString(IncomeEntry* map);
   const char* GetEntryMapString(BillEntry* map);
   void PrintEntryMap(BillEntry* map);
   // deprecated BillEntry* LoadEntryMap(const char* file);
