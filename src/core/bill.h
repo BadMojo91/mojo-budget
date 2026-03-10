@@ -20,11 +20,20 @@ extern "C" {
   } PaymentFrequency;
 
   typedef struct {
+    int day;   // 1-31, 0 = not set
+    int month; // 1-12
+    int year;
+  } BillDate;
+
+  typedef struct {
     char name[MAX_BILL_NAME];
     PaymentFrequency frequency;
     double payment;
     bool include_in_totals;
     bool locked;
+    int last_date_day;   // 1-31, 0 = not set
+    int last_date_month; // 1-12
+    int last_date_year;
   } Bill;
 
   typedef struct {
@@ -62,6 +71,14 @@ extern "C" {
   extern uint64_t _nextIncomeID;
 
   const char* ConvertDoubleToString(double value);
+  bool IsLeapYear(int year);
+  int DaysInMonth(int month, int year);
+  int DayOfWeek(int day, int month, int year); // 0=Mon, 6=Sun
+  BillDate AddDays(BillDate d, int n);
+  BillDate AddMonths(BillDate d, int n);
+  BillDate AddYears(BillDate d, int n);
+  BillDate CalcNextBillDate(const Bill *bill);
+  void BuildYearCalendar(BillEntry *map, int year, int out[12][31]);
   void AddEntry(BillEntry** map, Bill entry);
   void RemoveEntry(BillEntry** map, uint64_t id);
   void ClearEntries(BillEntry** map);

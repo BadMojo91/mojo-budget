@@ -56,6 +56,133 @@ const char *ConvertDoubleToString(double value)
   return strdup(result);
 }
 
+bool IsLeapYear(int year)
+{
+  return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+}
+
+int DaysInMonth(int month, int year)
+{
+  static const int days[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  if (month == 2 && IsLeapYear(year))
+    return 29;
+  return days[month];
+}
+
+// Returns 0=Mon, 1=Tue, ..., 6=Sun (Tomohiko Sakamoto, adjusted)
+int DayOfWeek(int d, int m, int y)
+{
+  static const int t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
+  if (m < 3)
+    y--;
+  int dow = (y + y / 4 - y / 100 + y / 400 + t[m - 1] + d) % 7; // 0=Sun
+  return (dow + 6) % 7; // convert: 0=Mon, 6=Sun
+}
+
+BillDate AddDays(BillDate d, int n)
+{
+  d.day += n;
+  while (d.day > DaysInMonth(d.month, d.year))
+  {
+    d.day -= DaysInMonth(d.month, d.year);
+    d.month++;
+    if (d.month > 12)
+    {
+      d.month = 1;
+      d.year++;
+    }
+  }
+  return d;
+}
+
+BillDate AddMonths(BillDate d, int n)
+{
+  d.month += n;
+  while (d.month > 12)
+  {
+    d.month -= 12;
+    d.year++;
+  }
+  int dim = DaysInMonth(d.month, d.year);
+  if (d.day > dim)
+    d.day = dim;
+  return d;
+}
+
+BillDate AddYears(BillDate d, int n)
+{
+  d.year += n;
+  int dim = DaysInMonth(d.month, d.year);
+  if (d.day > dim)
+    d.day = dim;
+  return d;
+}
+
+static BillDate AdvanceBillDate(const Bill *bill, BillDate d)
+{
+  switch (bill->frequency)
+  {
+  case WEEKLY:      return AddDays(d, 7);
+  case FORTNIGHTLY: return AddDays(d, 14);
+  case MONTHLY:     return AddMonths(d, 1);
+  case QUARTERLY:   return AddMonths(d, 3);
+  case YEARLY:      return AddYears(d, 1);
+  default:          return d;
+  }
+}
+
+BillDate CalcNextBillDate(const Bill *bill)
+{
+  BillDate d = {bill->last_date_day, bill->last_date_month, bill->last_date_year};
+  if (d.day == 0)
+    return d;
+  return AdvanceBillDate(bill, d);
+}
+
+void BuildYearCalendar(BillEntry *map, int year, int out[12][31])
+{
+  for (int m = 0; m < 12; m++)
+    for (int d = 0; d < 31; d++)
+      out[m][d] = 0;
+
+  int count = hmlen(map);
+  for (int i = 0; i < count; i++)
+  {
+    Bill *bill = &map[i].value;
+    if (!bill->include_in_totals || bill->last_date_day == 0)
+      continue;
+
+    BillDate cur = {bill->last_date_day, bill->last_date_month,
+                    bill->last_date_year};
+
+    if (cur.year > year)
+      continue;
+
+    // Advance until we reach the target year
+    while (cur.year < year)
+    {
+      BillDate next = AdvanceBillDate(bill, cur);
+      if (next.year > year)
+        break;
+      cur = next;
+    }
+    // One final advance if still before target year
+    if (cur.year < year)
+    {
+      cur = AdvanceBillDate(bill, cur);
+      if (cur.year != year)
+        continue;
+    }
+
+    // Collect all occurrences within target year
+    while (cur.year == year)
+    {
+      out[cur.month - 1][cur.day - 1]++;
+      cur = AdvanceBillDate(bill, cur);
+    }
+  }
+}
+
 void AddEntry(BillEntry **map, Bill billEntry)
 {
   billEntry.include_in_totals = true;

@@ -5,6 +5,8 @@
 #include <stb/stb_ds.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 static const char *g_freqNames[] = {"Weekly", "Fortnightly", "Monthly",
                                     "Quarterly", "Yearly"};
@@ -12,6 +14,10 @@ static const char *g_incomeFreqNames[] = {"Weekly", "Fortnightly", "Monthly",
                                           "Alternating Weekly"};
 static float g_billTableHeight = 0.0f;
 static float g_incomeTableHeight = 0.0f;
+static int g_calYear = 0;
+bool g_showCalendar = false;
+
+#define CALENDAR_WIDTH 680.0f
 
 typedef struct
 {
@@ -324,6 +330,8 @@ static void ConfigureBudgetWindowLayout()
   panelPos.y += menuBarHeight;
   ImVec2 panelSize = viewport->Size;
   panelSize.y -= menuBarHeight;
+  if (g_showCalendar)
+    panelSize.x -= CALENDAR_WIDTH;
 
   igSetNextWindowPos(panelPos, ImGuiCond_Always, (ImVec2){0, 0});
   igSetNextWindowSize(panelSize, ImGuiCond_Always);
@@ -372,11 +380,12 @@ static void SetupBillsTableColumns()
   igTableSetupColumn("Monthly", ImGuiTableColumnFlags_WidthFixed, 75.0f, 0);
   igTableSetupColumn("Quarterly", ImGuiTableColumnFlags_WidthFixed, 75.0f, 0);
   igTableSetupColumn("Yearly", ImGuiTableColumnFlags_WidthFixed, 75.0f, 0);
+  igTableSetupColumn("Next Due", ImGuiTableColumnFlags_WidthFixed, 90.0f, 0);
   igTableSetupColumn("Parameters",
                      ImGuiTableColumnFlags_WidthFixed |
                          ImGuiTableColumnFlags_NoResize |
                          ImGuiTableColumnFlags_NoHide,
-                     164, 0);
+                     210, 0);
   igTableHeadersRow();
 }
 
@@ -480,45 +489,101 @@ static void DrawBillConvertedColumns(const double amounts[5])
   free((void *)s);
 }
 
+static void DrawBillNextDueColumn(Bill *bill)
+{
+  static const char *monthNames[] = {"Jan","Feb","Mar","Apr","May","Jun",
+                                      "Jul","Aug","Sep","Oct","Nov","Dec"};
+  igTableSetColumnIndex(8);
+  BillDate d = CalcNextBillDate(bill);
+  if (d.day == 0)
+  {
+    igText("---");
+  }
+  else
+  {
+    igText("%02d %s %d", d.day, monthNames[d.month - 1], d.year);
+  }
+}
+
 static void DrawBillActions(BillEntry *entry, bool *removeRequested,
                             uint64_t *removeKey)
 {
   Bill *bill = &entry->value;
-  igTableSetColumnIndex(8);
+  igTableSetColumnIndex(9);
+
+  static int dp_day = 0, dp_month = 0, dp_year = 2024;
+  static const char *dpMonthNames[] = {"Jan","Feb","Mar","Apr","May","Jun",
+                                        "Jul","Aug","Sep","Oct","Nov","Dec"};
+  static const char *dayItems[31] = {
+    "01","02","03","04","05","06","07","08","09","10",
+    "11","12","13","14","15","16","17","18","19","20",
+    "21","22","23","24","25","26","27","28","29","30","31"
+  };
 
   const char *useLabel = bill->include_in_totals ? "On" : "Off";
   const char *lockLabel = bill->locked ? "Unlock" : "Lock";
   const float spacing = 4.0f;
-  const float buttonPadding = 16.0f;
-  float actionsWidth = igGetContentRegionAvail().x;
-  float useWidth =
-      igCalcTextSize(useLabel, NULL, false, -1.0f).x + buttonPadding;
-  float lockWidth =
-      igCalcTextSize(lockLabel, NULL, false, -1.0f).x + buttonPadding;
-  float deleteWidth =
-      igCalcTextSize("Delete", NULL, false, -1.0f).x + buttonPadding;
 
   if (igSmallButton(useLabel))
-  {
     bill->include_in_totals = !bill->include_in_totals;
-  }
 
-  if (actionsWidth >= (useWidth + spacing + lockWidth + spacing + deleteWidth))
-  {
-    igSameLine(0.0f, spacing);
-  }
+  igSameLine(0.0f, spacing);
 
   if (igSmallButton(lockLabel))
-  {
     bill->locked = !bill->locked;
+
+  igSameLine(0.0f, spacing);
+
+  if (igSmallButton("Date"))
+  {
+    if (bill->last_date_day > 0)
+    {
+      dp_day   = bill->last_date_day - 1;
+      dp_month = bill->last_date_month - 1;
+      dp_year  = bill->last_date_year;
+    }
+    else
+    {
+      time_t t = time(NULL);
+      struct tm *tm_info = localtime(&t);
+      dp_day   = tm_info->tm_mday - 1;
+      dp_month = tm_info->tm_mon;
+      dp_year  = tm_info->tm_year + 1900;
+    }
+    igOpenPopup_Str("##datepick", 0);
   }
 
-  if (actionsWidth >=
-          (useWidth + spacing + lockWidth + spacing + deleteWidth) ||
-      actionsWidth >= (lockWidth + spacing + deleteWidth))
+  if (igBeginPopup("##datepick", 0))
   {
-    igSameLine(0.0f, spacing);
+    int daysInM = DaysInMonth(dp_month + 1, dp_year);
+    if (dp_day >= daysInM) dp_day = daysInM - 1;
+
+    igSetNextItemWidth(60.0f);
+    igCombo_Str_arr("##dpmonth", &dp_month, dpMonthNames, 12, 12);
+    igSameLine(0.0f, 4.0f);
+    igSetNextItemWidth(50.0f);
+    igCombo_Str_arr("##dpday", &dp_day, dayItems, daysInM, daysInM);
+    igSameLine(0.0f, 4.0f);
+    igSetNextItemWidth(90.0f);
+    igInputInt("##dpyear", &dp_year, 1, 10, 0);
+
+    if (igSmallButton("Set"))
+    {
+      bill->last_date_day   = dp_day + 1;
+      bill->last_date_month = dp_month + 1;
+      bill->last_date_year  = dp_year;
+      igCloseCurrentPopup();
+    }
+    igSameLine(0.0f, 4.0f);
+    if (igSmallButton("Clear"))
+    {
+      bill->last_date_day = 0;
+      igCloseCurrentPopup();
+    }
+    igEndPopup();
   }
+
+  igSameLine(0.0f, spacing);
 
   if (igSmallButton("Delete"))
   {
@@ -543,6 +608,7 @@ static bool DrawBillRow(BillEntry *entry, double totals[5],
   GetBillConvertedAmounts(bill, amounts);
   AccumulateBillTotals(bill, amounts, totals);
   DrawBillConvertedColumns(amounts);
+  DrawBillNextDueColumn(bill);
   DrawBillActions(entry, removeRequested, removeKey);
 
   igPopID();
@@ -614,7 +680,7 @@ static void DrawAddBillButton()
 static void DrawBillsTable(const TableLayout *layout, double totals[5],
                            bool *removeRequested, uint64_t *removeKey)
 {
-  if (!igBeginTable("BillsEntries", 9,
+  if (!igBeginTable("BillsEntries", 10,
                     ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
                         ImGuiTableFlags_Resizable |
                         ImGuiTableFlags_SizingFixedFit |
@@ -694,6 +760,172 @@ static void DrawBillTotals(const double totals[5], const double incomeTotals[5])
   igEndTable();
 }
 
+static void ShowBillsOnDate(BillEntry *map, int year, int month, int day)
+{
+  int n = hmlen(map);
+  int found = 0;
+  double total = 0.0;
+  for (int i = 0; i < n; i++)
+  {
+    Bill *bill = &map[i].value;
+    if (!bill->include_in_totals || bill->last_date_day == 0)
+      continue;
+    BillDate cur = {bill->last_date_day, bill->last_date_month, bill->last_date_year};
+    for (int iter = 0; iter < 400; iter++)
+    {
+      if (cur.year > year) break;
+      if (cur.year == year && cur.month == month && cur.day == day)
+      {
+        igText("%-28s  $%.2f", bill->name, bill->payment);
+        found++;
+        total += bill->payment;
+        break;
+      }
+      switch (bill->frequency)
+      {
+        case WEEKLY:       cur = AddDays(cur, 7);    break;
+        case FORTNIGHTLY:  cur = AddDays(cur, 14);   break;
+        case MONTHLY:      cur = AddMonths(cur, 1);  break;
+        case QUARTERLY:    cur = AddMonths(cur, 3);  break;
+        case YEARLY:       cur = AddYears(cur, 1);   break;
+        default: iter = 400; break;
+      }
+    }
+  }
+  if (found == 0)
+    igText("Bills due: (none)");
+  else if (found > 1)
+  {
+    igSeparator();
+    igText("Total: $%.2f", total);
+  }
+}
+
+static void DrawYearCalendar(BillEntry *map)
+{
+  if (g_calYear == 0)
+  {
+    time_t t = time(NULL);
+    struct tm *tm_info = localtime(&t);
+    g_calYear = tm_info->tm_year + 1900;
+  }
+
+  static const char *monthNames[] = {"Jan","Feb","Mar","Apr","May","Jun",
+                                      "Jul","Aug","Sep","Oct","Nov","Dec"};
+
+  if (igSmallButton("<")) g_calYear--;
+  igSameLine(0.0f, 8.0f);
+  igText("%d", g_calYear);
+  igSameLine(0.0f, 8.0f);
+  if (igSmallButton(">")) g_calYear++;
+
+  int calData[12][31];
+  memset(calData, 0, sizeof(calData));
+  BuildYearCalendar(map, g_calYear, calData);
+
+  if (!igBeginTable("CalGrid", 3,
+                    ImGuiTableFlags_SizingStretchSame,
+                    (ImVec2){0, 0}, 0))
+    return;
+
+  igPushStyleVar_Vec2(ImGuiStyleVar_CellPadding, (ImVec2){3.0f, 3.0f});
+
+  for (int m = 0; m < 12; m++)
+  {
+    if (m % 3 == 0)
+      igTableNextRow(0, 0);
+    igTableSetColumnIndex(m % 3);
+
+    igPushID_Int(m + 200);
+    igPushStyleVar_Vec2(ImGuiStyleVar_ItemSpacing, (ImVec2){2.0f, 1.0f});
+    igBeginChild_Str("##mchild", (ImVec2){0, 145}, false,
+                     ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+    float cellW = igGetContentRegionAvail().x;
+    float textW = igCalcTextSize(monthNames[m], NULL, false, -1.0f).x;
+    float cx = igGetCursorPosX() + (cellW - textW) * 0.5f;
+    if (cx > igGetCursorPosX()) igSetCursorPosX(cx);
+
+    // Subtle highlight behind month name
+    ImVec2 textPos = igGetCursorScreenPos();
+    float padX = 6.0f, padY = 2.0f;
+    ImVec2 rectMin = {textPos.x - padX, textPos.y - padY};
+    ImVec2 rectMax = {textPos.x + textW + padX, textPos.y + igGetTextLineHeight() + padY};
+    ImDrawList *dl = igGetWindowDrawList();
+    ImDrawList_AddRectFilled(dl, rectMin, rectMax,
+                             igColorConvertFloat4ToU32((ImVec4){0.3f, 0.5f, 0.8f, 0.25f}),
+                             3.0f, 0);
+    igPushStyleColor_Vec4(ImGuiCol_Text, (ImVec4){0.7f, 0.88f, 1.0f, 1.0f});
+    igText("%s", monthNames[m]);
+    igPopStyleColor(1);
+    igSeparator();
+
+    igPushStyleColor_Vec4(ImGuiCol_TableBorderLight, (ImVec4){1.0f, 1.0f, 1.0f, 0.07f});
+    if (igBeginTable("M", 7,
+                     ImGuiTableFlags_SizingFixedSame |
+                     ImGuiTableFlags_BordersInner,
+                     (ImVec2){0, 0}, 0))
+    {
+      for (int c = 0; c < 7; c++)
+        igTableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 20.0f, 0);
+
+      static const char *dowNames[] = {"Mo","Tu","We","Th","Fr","Sa","Su"};
+      igTableNextRow(0, 0);
+      for (int c = 0; c < 7; c++)
+      {
+        igTableSetColumnIndex(c);
+        igText("%s", dowNames[c]);
+      }
+
+      int startDow  = DayOfWeek(1, m + 1, g_calYear);
+      int daysInMonth = DaysInMonth(m + 1, g_calYear);
+      int col = startDow;
+      igTableNextRow(0, 0);
+
+      for (int day = 1; day <= daysInMonth; day++)
+      {
+        if (col >= 7)
+        {
+          igTableNextRow(0, 0);
+          col = 0;
+        }
+        igTableSetColumnIndex(col);
+
+        bool hasBill = calData[m][day - 1] > 0;
+        if (hasBill)
+        {
+          ImVec4 yellow = {1.0f, 0.8f, 0.2f, 1.0f};
+          igPushStyleColor_Vec4(ImGuiCol_Text, yellow);
+        }
+        igText("%d", day);
+        if (hasBill)
+          igPopStyleColor(1);
+
+        if (hasBill && igIsItemHovered(ImGuiHoveredFlags_None))
+        {
+          if (igBeginTooltip())
+          {
+            ShowBillsOnDate(map, g_calYear, m + 1, day);
+            igEndTooltip();
+          }
+        }
+
+        col++;
+      }
+
+      igEndTable();
+    }
+    igPopStyleColor(1); // TableBorderLight
+
+    igEndChild();
+    igPopStyleVar(1); // ItemSpacing
+    igPopID();
+  }
+
+  igPopStyleVar(1); // CellPadding
+  igEndTable();
+}
+
 void DrawBudgetWindow()
 {
   double totals[5] = {0.0};
@@ -736,5 +968,30 @@ void DrawBudgetWindow()
 
   DrawBillTotals(totals, incomeTotals);
 
+  igEnd();
+}
+
+void DrawCalendarWindow()
+{
+  if (!g_showCalendar)
+    return;
+
+  ImGuiViewport *viewport = igGetMainViewport();
+  float menuBarHeight = igGetFrameHeight();
+
+  igSetNextWindowPos(
+      (ImVec2){viewport->Pos.x + viewport->Size.x - CALENDAR_WIDTH,
+               viewport->Pos.y + menuBarHeight},
+      ImGuiCond_Always, (ImVec2){0, 0});
+  igSetNextWindowSize(
+      (ImVec2){CALENDAR_WIDTH, viewport->Size.y - menuBarHeight},
+      ImGuiCond_Always);
+
+  if (igBegin("Calendar", &g_showCalendar,
+               ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                   ImGuiWindowFlags_NoCollapse))
+  {
+    DrawYearCalendar(entryMap);
+  }
   igEnd();
 }

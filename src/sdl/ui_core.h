@@ -10,6 +10,7 @@ extern "C"
 
   void DrawAppMenuBar(bool *running);
   void DrawBudgetWindow();
+  void DrawCalendarWindow();
 
   void DrawUI(bool *running);
 

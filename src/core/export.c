@@ -8,7 +8,17 @@
 #include <string.h>
 
 #define BUD_MAGIC {0x1B, 'B', 'U', 'D'}
-#define BUD_VERSION 1
+#define BUD_VERSION 2
+
+// v1 Bill struct layout (no last_date fields) — used for backward-compat loading
+typedef struct
+{
+  char name[MAX_BILL_NAME];
+  PaymentFrequency frequency;
+  double payment;
+  bool include_in_totals;
+  bool locked;
+} BillV1;
 
 typedef struct
 {
@@ -66,7 +76,7 @@ BillEntry *BudgetLoad(const char *filePath)
       return NULL;
     }
 
-    if (header.version == 1)
+    if (header.version == 2)
     {
       if (fread(budgetName, sizeof(budgetName), 1, file) != 1)
       {
@@ -75,7 +85,7 @@ BillEntry *BudgetLoad(const char *filePath)
         return NULL;
       }
 
-      printf("Loading budget (v1): %s\n", trimmedPath);
+      printf("Loading budget (v2): %s\n", trimmedPath);
 
       int billCount;
       if (fread(&billCount, sizeof(int), 1, file) != 1 || billCount < 0)
@@ -98,6 +108,81 @@ BillEntry *BudgetLoad(const char *filePath)
           fclose(file);
           return NULL;
         }
+        hmput(map, key, bill);
+        _nextID++;
+      }
+      _nextID++;
+
+      int incomeCount;
+      if (fread(&incomeCount, sizeof(int), 1, file) != 1 || incomeCount < 0)
+      {
+        fprintf(stderr, "Error: failed to read income count from '%s'\n", filePath);
+        hmfree(map);
+        fclose(file);
+        return NULL;
+      }
+
+      for (int i = 0; i < incomeCount; i++)
+      {
+        uint64_t key;
+        Income income;
+        if (fread(&key, sizeof(uint64_t), 1, file) != 1 ||
+            fread(&income, sizeof(Income), 1, file) != 1)
+        {
+          fprintf(stderr, "Error: unexpected EOF reading income %d from '%s'\n", i, filePath);
+          hmfree(map);
+          fclose(file);
+          return NULL;
+        }
+        hmput(incomeMap, key, income);
+        _nextIncomeID++;
+      }
+      _nextIncomeID++;
+
+      printf("Loaded %d bills, %d incomes.\n", billCount, incomeCount);
+      fclose(file);
+      return map;
+    }
+    else if (header.version == 1)
+    {
+      if (fread(budgetName, sizeof(budgetName), 1, file) != 1)
+      {
+        fprintf(stderr, "Error: failed to read budget name from '%s'\n", filePath);
+        fclose(file);
+        return NULL;
+      }
+
+      printf("Loading budget (v1): %s\n", trimmedPath);
+
+      int billCount;
+      if (fread(&billCount, sizeof(int), 1, file) != 1 || billCount < 0)
+      {
+        fprintf(stderr, "Error: failed to read bill count from '%s'\n", filePath);
+        fclose(file);
+        return NULL;
+      }
+
+      BillEntry *map = NULL;
+      for (int i = 0; i < billCount; i++)
+      {
+        uint64_t key;
+        BillV1 v1bill;
+        if (fread(&key, sizeof(uint64_t), 1, file) != 1 ||
+            fread(&v1bill, sizeof(BillV1), 1, file) != 1)
+        {
+          fprintf(stderr, "Error: unexpected EOF reading bill %d from '%s'\n", i, filePath);
+          hmfree(map);
+          fclose(file);
+          return NULL;
+        }
+        Bill bill;
+        memset(&bill, 0, sizeof(Bill));
+        memcpy(bill.name, v1bill.name, sizeof(v1bill.name));
+        bill.frequency = v1bill.frequency;
+        bill.payment = v1bill.payment;
+        bill.include_in_totals = v1bill.include_in_totals;
+        bill.locked = v1bill.locked;
+        // last_date_day/month/year remain 0 (not set)
         hmput(map, key, bill);
         _nextID++;
       }
@@ -165,15 +250,22 @@ BillEntry *BudgetLoad(const char *filePath)
     for (int i = 0; i < entryCount; i++)
     {
       uint64_t key;
-      Bill bill;
+      BillV1 v1bill;
       if (fread(&key, sizeof(uint64_t), 1, file) != 1 ||
-          fread(&bill, sizeof(Bill), 1, file) != 1)
+          fread(&v1bill, sizeof(BillV1), 1, file) != 1)
       {
         fprintf(stderr, "Error: unexpected EOF reading bill %d from '%s'\n", i, filePath);
         hmfree(map);
         fclose(file);
         return NULL;
       }
+      Bill bill;
+      memset(&bill, 0, sizeof(Bill));
+      memcpy(bill.name, v1bill.name, sizeof(v1bill.name));
+      bill.frequency = v1bill.frequency;
+      bill.payment = v1bill.payment;
+      bill.include_in_totals = v1bill.include_in_totals;
+      bill.locked = v1bill.locked;
       hmput(map, key, bill);
       _nextID++;
     }

@@ -11,6 +11,8 @@
 #include "../core/export.h"
 #include "../core/utility.h"
 
+extern bool g_showCalendar;
+
 void DrawFileMenu(bool *running)
 {
   if (igBeginMenu("File", true))
@@ -157,6 +159,14 @@ void DrawAppMenuBar(bool *running)
   if (igBeginMainMenuBar())
   {
     DrawFileMenu(running);
+
+    if (igBeginMenu("View", true))
+    {
+      if (igMenuItem_Bool("Calendar", NULL, g_showCalendar, true))
+        g_showCalendar = !g_showCalendar;
+      igEndMenu();
+    }
+
     DrawAboutMenu();
     
     float menuBarWidth = igGetWindowWidth();
@@ -173,4 +183,5 @@ void DrawUI(bool *running)
 {
   DrawAppMenuBar(running);
   DrawBudgetWindow();
+  DrawCalendarWindow();
 }
