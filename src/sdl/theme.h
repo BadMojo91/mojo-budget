@@ -13,12 +13,21 @@ typedef struct {
 } Theme;
 
 /* Premade theme names */
-#define THEME_DARK        "Dark"
-#define THEME_LIGHT       "Light"
-#define THEME_CLASSIC     "Classic"
-#define THEME_CATPPUCCIN  "Catppuccin Mocha"
-#define THEME_NORD        "Nord"
-#define THEME_DRACULA     "Dracula"
+#define THEME_DARK                    "Dark"
+#define THEME_LIGHT                   "Light"
+#define THEME_CLASSIC                 "Classic"
+#define THEME_CATPPUCCIN_LATTE        "Catppuccin Latte"
+#define THEME_CATPPUCCIN_FRAPPE       "Catppuccin Frappe"
+#define THEME_CATPPUCCIN_MACCHIATO    "Catppuccin Macchiato"
+#define THEME_CATPPUCCIN_MOCHA        "Catppuccin Mocha"
+#define THEME_NORD                    "Nord"
+#define THEME_DRACULA                 "Dracula"
+#define THEME_HIGH_CONTRAST_AMBER     "High Contrast Amber"
+#define THEME_HIGH_CONTRAST_CYAN      "High Contrast Cyan"
+#define THEME_HIGH_CONTRAST_LIME      "High Contrast Lime"
+#define THEME_PSYCHEDELIC_NEON        "Psychedelic Neon"
+
+#define THEME_CATPPUCCIN THEME_CATPPUCCIN_MOCHA
 
 /* Returns 1 if name matches one of the built-in premade themes. */
 int  IsPremadeTheme(const char *name);

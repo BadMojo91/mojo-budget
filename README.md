@@ -102,6 +102,7 @@ cmake --build build/linux
 
 - **File menu** — New, Open, Save, Save As, Export TXT, Export CSV
 - **View menu** — toggle the yearly calendar panel
+- **Themes menu** — switch between built-in Catppuccin, high-contrast, psychedelic and custom themes
 - **Income table** — top section; Add button bottom-right
 - **Bills table** — middle section; Add button bottom-right
 - **Totals table** — bottom section; shows Income / Expenses / Net by frequency
@@ -138,4 +139,3 @@ Created by [BadMojo](https://github.com/badmojo).
 ## License
 
 MIT License — see [LICENSE](LICENSE) for details.
-

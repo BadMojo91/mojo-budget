@@ -203,9 +203,13 @@ void DrawAboutMenu()
 /* Premade theme names in display order */
 static const char *s_premadeThemes[] = {
   THEME_DARK, THEME_LIGHT, THEME_CLASSIC,
-  THEME_CATPPUCCIN, THEME_NORD, THEME_DRACULA,
+  THEME_CATPPUCCIN_LATTE, THEME_CATPPUCCIN_FRAPPE,
+  THEME_CATPPUCCIN_MACCHIATO, THEME_CATPPUCCIN_MOCHA,
+  THEME_NORD, THEME_DRACULA,
+  THEME_HIGH_CONTRAST_AMBER, THEME_HIGH_CONTRAST_CYAN,
+  THEME_HIGH_CONTRAST_LIME, THEME_PSYCHEDELIC_NEON,
 };
-static const int s_premadeCount = 6;
+static const int s_premadeCount = 13;
 
 static Theme  *s_customThemes     = NULL;
 static int     s_customThemeCount = 0;
