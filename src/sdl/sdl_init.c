@@ -198,8 +198,7 @@ int main(int argc, char *argv[])
     {
       ImGui_ImplSDL2_ProcessEvent(&event);
 
-      if (event.type == SDL_QUIT ||
-          (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE))
+      if (event.type == SDL_QUIT)
       {
         running = false;
       }
