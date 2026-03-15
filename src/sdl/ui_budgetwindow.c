@@ -846,6 +846,15 @@ static void ShowBillsOnDate(BillEntry *map, int year, int month, int day)
   }
 }
 
+static bool IsToday(int day, int month, int year)
+{
+  time_t t = time(NULL);
+  struct tm *tm_info = localtime(&t);
+  return (tm_info->tm_year + 1900) == year &&
+         (tm_info->tm_mon + 1) == month &&
+         tm_info->tm_mday == day;
+}
+
 static void DrawYearCalendar(BillEntry *map)
 {
   if (g_calYear == 0)
@@ -947,6 +956,17 @@ static void DrawYearCalendar(BillEntry *map)
             col = (ImVec4){1.0f, 0.8f, 0.2f, 1.0f};
           igPushStyleColor_Vec4(ImGuiCol_Text, col);
         }
+
+        bool isToday = IsToday(day, m + 1, g_calYear);
+        if (isToday)        {
+          ImVec2 cellMin = igGetItemRectMin();
+          ImVec2 cellMax = igGetItemRectMax();
+          ImDrawList *dl = igGetWindowDrawList();
+          ImVec4 todayCol = (ImVec4){0.8f, 0.8f, 1.0f, 0.3f};
+          ImDrawList_AddRectFilled(dl, cellMin, cellMax, igColorConvertFloat4ToU32(todayCol), 3.0f, 0);
+        }
+
+
         igText("%d", day);
         if (hasBill)
           igPopStyleColor(1);
