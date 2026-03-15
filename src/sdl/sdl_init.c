@@ -12,6 +12,7 @@
 #include "cimgui_impl.h"
 
 #include "ui_core.h"
+#include "theme.h"
 
 #include "../core/bill.h"
 #include "../core/config.h"
@@ -164,6 +165,13 @@ int main(int argc, char *argv[])
   }
 
   igCreateContext(NULL);
+
+  /* Apply the saved theme before any rendering */
+  {
+    char themesDir[1024];
+    GetThemesDir(themesDir, sizeof(themesDir));
+    ApplyThemeByName(themesDir, cfg.activeTheme);
+  }
 
   ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
   ImGui_ImplOpenGL2_Init();

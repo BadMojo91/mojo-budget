@@ -5,6 +5,7 @@
 
 #define DEFAULT_WINDOW_WIDTH 1024
 #define DEFAULT_WINDOW_HEIGHT 768
+#define RECENT_FILES_MAX 10
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,8 +13,11 @@ extern "C" {
 
 
   typedef struct {
-    int window_width;
-    int window_height;
+    int  window_width;
+    int  window_height;
+    char activeTheme[256];
+    char recentFiles[RECENT_FILES_MAX][4096];
+    int  recentFileCount;
   }Config;
 
   extern Config config;
@@ -29,7 +33,10 @@ extern "C" {
 
 // Returns the user config directory: ~/.config/mojo-budget (Linux) or %APPDATA%\mojo-budget (Windows)
   const char* GetConfigDir(void);
-  
+
+// Inserts path at the front of cfg->recentFiles, deduplicating and capping at RECENT_FILES_MAX.
+  void AddRecentFile(Config* cfg, const char* path);
+
 
 
 #ifdef __cplusplus
